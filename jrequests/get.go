@@ -10,3 +10,4 @@ func Get(requrl string,opts...OptionInterface) (statuscode int,headers map[strin
 	statuscode,headers,body,err = SingleReq("GET",requrl,getOption)
 	return statuscode,headers,body,err
 }
+
