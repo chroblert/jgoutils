@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/JCGoUtils.iml" filepath="$PROJECT_DIR$/.idea/JCGoUtils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/JC-GoUtils.iml" filepath="$PROJECT_DIR$/.idea/JC-GoUtils.iml" />
     </modules>
   </component>
 </project>

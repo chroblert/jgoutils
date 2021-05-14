@@ -1,1 +1,5 @@
 logs/*
+cas/
+JC-GoUtils.exe
+.idea/*
+.idea
