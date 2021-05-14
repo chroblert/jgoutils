@@ -1,0 +1,5 @@
+package jconfig
+
+func init(){
+
+}
