@@ -4,7 +4,7 @@ import (
 	"fmt"
 	_ "github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jrequests"
+	"github.com/chroblert/JC-GoUtils/jparse/jhttp"
 	"strings"
 )
 
@@ -78,11 +78,11 @@ func main() {
 	// === jhttp测试
 	//fileName := "req.txt"
 	//jhttpobj := jhttp.New()
-	//jhttpobj.SetIsUseSSL(true)
-	//jhttpobj.SetIsVerifySSL(true)
+	//jhttpobj.SetIsUseSSL(false)
+	//jhttpobj.SetIsVerifySSL(false)
 	//jhttpobj.Init(fileName)
 	//jasyncobj := jasync.New()
-	//for i := 0;i<1;i++{
+	//for i := 0;i<30;i++{
 	//	jasyncobj.Add(strconv.Itoa(i),jhttpobj.Repeat,nil)
 	//}
 	//jasyncobj.Run()
@@ -94,7 +94,11 @@ func main() {
 	//jlog.Println("test")
 
 	// ==== jconfig测试
-	code, _, _, _ := jrequests.Get("https://www.baidu.com")
-	jlog.Debug(code)
+	//code, _, _, _ := jrequests.Get("https://www.baidu.com")
+	//jlog.Debug(code)
 	//jlog.Debug(string(body))
+
+	jhttpobj := jhttp.New()
+	jhttpobj.InitWithBytes([]byte("GET / http/1.1\r\nHost: baidu.com\r\nContent-Length: 18\r\n\r\ntest"))
+	jhttpobj.Repeat()
 }
