@@ -4,7 +4,7 @@ import (
 	"fmt"
 	_ "github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jparse/jhttp"
+	"github.com/chroblert/JC-GoUtils/jnet/jhttp"
 	"strings"
 )
 
