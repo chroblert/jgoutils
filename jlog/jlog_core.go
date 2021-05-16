@@ -1,6 +1,7 @@
 package jlog
 
 import (
+	"github.com/chroblert/JC-GoUtils/jconfig"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,24 +16,23 @@ const (
 	ERROR
 	FATAL
 
-	bufferSize    = 1024 * 256 // 256 KB
-	digits        = "0123456789"
-	flushInterval = 5 * time.Second
-	logShort      = "[D][I][W][E][F]"
+	digits   = "0123456789"
+	logShort = "[D][I][W][E][F]"
 )
 
 var (
-	maxAge         = 180               // 180 天
-	maxSize  int64 = 1024 * 1024 * 256 // 256 MB
-	logCount       = 5
-	fishLogger = NewLogger("logs/app.log")	// 默认实例
+	bufferSize          = jconfig.Conf.LogConfig.BufferSize // 256 KB
+	flushInterval       = time.Duration(jconfig.Conf.LogConfig.FlushInterval) * time.Second
+	maxAge              = jconfig.Conf.LogConfig.MaxStoreDays // 180 天
+	maxSize       int64 = jconfig.Conf.LogConfig.MaxSize      // 256 MB
+	logCount            = jconfig.Conf.LogConfig.LogCount
+	fishLogger          = NewLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
 )
 
-
-func init(){
+func init() {
 	SetVerbose(true)
-	SetLevel(DEBUG)
-	SetConsole(true)
+	SetLevel(logLevel(jconfig.Conf.LogConfig.LV))
+	SetConsole(jconfig.Conf.LogConfig.IsConsole)
 }
 
 // 字符串等级
@@ -65,8 +65,3 @@ func NewLogger(fullPath string) *FishLogger {
 	go fl.daemon()
 	return fl
 }
-
-
-
-
-

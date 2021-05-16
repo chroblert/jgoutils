@@ -2,20 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/chroblert/JC-GoUtils/jasync"
+	_ "github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jparse/jhttp"
-	"strconv"
+	"github.com/chroblert/JC-GoUtils/jrequests"
 	"strings"
 )
 
 const (
-	HttpProxy  = "http://192.168.50.2:8080"
+	HttpProxy = "http://192.168.50.2:8080"
 	//HttpProxy = "http://192.168.30.109:10809"
 	SocksProxy = "socks5://192.168.30.109:10808"
 )
 
-func print(statusCode int,headers map[string][]string,body []byte,err error){
+func print(statusCode int, headers map[string][]string, body []byte, err error) {
 	fmt.Println(strings.TrimSpace(string(body)))
 }
 
@@ -77,20 +76,25 @@ func main() {
 	defer jlog.Flush()
 
 	// === jhttp测试
-	fileName := "req.txt"
-	jhttpobj := jhttp.New()
-	jhttpobj.SetIsUseSSL(true)
-	jhttpobj.SetIsVerifySSL(true)
-	jhttpobj.Init(fileName)
-	jasyncobj := jasync.New()
-	for i := 0;i<1;i++{
-		jasyncobj.Add(strconv.Itoa(i),jhttpobj.Repeat,nil)
-	}
-	jasyncobj.Run()
-	//jhttpobj.Repeat()
-	jasyncobj.Wait()
-	jasyncobj.GetStatus("",false)
-	jlog.Info("over")
-	jlog.Println("test")
+	//fileName := "req.txt"
+	//jhttpobj := jhttp.New()
+	//jhttpobj.SetIsUseSSL(true)
+	//jhttpobj.SetIsVerifySSL(true)
+	//jhttpobj.Init(fileName)
+	//jasyncobj := jasync.New()
+	//for i := 0;i<1;i++{
+	//	jasyncobj.Add(strconv.Itoa(i),jhttpobj.Repeat,nil)
+	//}
+	//jasyncobj.Run()
+	////jhttpobj.Repeat()
+	//jasyncobj.Wait()
+	//jasyncobj.GetStatus("",false)
+	//jasyncobj.Clean()
+	//jlog.Info("over")
+	//jlog.Println("test")
 
+	// ==== jconfig测试
+	code, _, _, _ := jrequests.Get("https://www.baidu.com")
+	jlog.Debug(code)
+	//jlog.Debug(string(body))
 }

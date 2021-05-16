@@ -1,6 +1,7 @@
 package jfile
 
 import (
+	"github.com/chroblert/JC-GoUtils/jlog"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 
 func PathExists(path string) (bool, error) {
 	path = getAbsPath(path)
+	jlog.Debug(path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -30,9 +32,9 @@ func GetAppPath() string {
 }
 
 // 获取绝对路径
-func getAbsPath(path string) string{
-	if !filepath.IsAbs(path){
-		path = filepath.FromSlash(GetAppPath()+"/"+path)
+func getAbsPath(path string) string {
+	if !filepath.IsAbs(path) {
+		path = filepath.FromSlash(GetAppPath() + "/" + path)
 	}
 	return path
 }
@@ -47,8 +49,7 @@ func GetFilenamesByDir(root string) ([]string, error) {
 	}
 
 	for _, file := range fileInfo {
-		//jlog.Debug(filepath.Abs(file.Name()))
-		files = append(files, getAbsPath("cas/"+file.Name()))
+		files = append(files, filepath.FromSlash(getAbsPath(root+"/"+file.Name())))
 	}
 	return files, nil
 }
