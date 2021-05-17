@@ -1,16 +1,19 @@
 {
+  "globalConfig": {
+    "maxGoroutinCount": 100000
+  },
   "requestsConfig": {
-    "proxy": "http://192.168.30.111:8080",
+    "proxy": "",
     "capath": "conf/cas",
     "isRedirect": false,
     "isVerifySSL": false,
-    "timeout": 15
+    "timeout": 60
   },
   "asyncConfig": {
     "taskMaxLimit": 10000
   },
   "logConfig": {
-    "lv": 0,
+    "lv": 1,
     "isConsole": true,
     "maxStoreDays": 5,
     "maxSize": 1024,

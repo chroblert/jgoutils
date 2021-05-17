@@ -8,15 +8,18 @@ package jasync
 // 通过调用 GetStatus() 来获取任务执行的状态
 // 通过调用 GetTotal() 来获取所有任务的数量
 import (
+	"github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
 	"reflect"
+	"sync"
 	"time"
 )
+
 // 异步执行所需要的数据
 type asyncTask struct {
-	ReqHandler reflect.Value
+	ReqHandler   reflect.Value
 	PrintHandler reflect.Value
-	Params     []reflect.Value
+	Params       []reflect.Value
 	// 结构体中嵌套的结构体无法被正常修改
 	// 因而需要采用结构体指针的形式 refer: https://haobook.readthedocs.io/zh_CN/latest/periodical/201611/zhangan.html
 	TaskStatus *taskStatus
@@ -24,56 +27,81 @@ type asyncTask struct {
 
 // Async 异步执行对象
 type Async struct {
-	total int
-	count int
-	tasks map[string]asyncTask
+	total     int
+	count     int
+	taskCount int
+	tasks     map[string]asyncTask
+	mu        *sync.RWMutex
 }
 
 // New 创建一个新的异步执行对象
 func New() Async {
-	return Async{tasks: make(map[string]asyncTask)}
+	return Async{tasks: make(map[string]asyncTask), mu: new(sync.RWMutex)}
 }
 
 //GetTotal 获取总共的任务数
-func(a *Async) GetTotal() int {
+func (a *Async) GetTotal() int {
 	return a.total
 }
 
-type taskStatus struct{
-	taskStatus int  // 任务状态 0: queue,1:scheduled,2: doing,3: done
+func (a *Async) addTaskCount() {
+	a.mu.RLock()
+	a.taskCount++
+	a.mu.RUnlock()
+}
+
+func (a *Async) subTaskCount() {
+	a.mu.RLock()
+	a.taskCount--
+	a.mu.RUnlock()
+}
+
+func (a *Async) wait() {
+	a.mu.RLock()
+	for {
+		// 如果当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
+		if a.taskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit {
+			break
+		}
+		jlog.Debug("达到同时最大任务量限制：taskMaxLimit:", jconfig.Conf.AsyncConfig.TaskMaxLimit, ",currentCount:", a.taskCount)
+	}
+	a.mu.RUnlock()
+}
+
+type taskStatus struct {
+	taskStatus  int   // 任务状态 0: queue,1:scheduled,2: doing,3: done
 	taskBegTime int64 // 任务开始时间
 	taskEndTime int64 // 任务结束时间
 }
 
 // 将毫秒级时间戳转换为时间字符串2006-01-02 15:04:05.000
-func (a *Async)timeStampToStr(nanotimestamp int64) string {
-	if nanotimestamp == 0{
+func (a *Async) timeStampToStr(nanotimestamp int64) string {
+	if nanotimestamp == 0 {
 		return "0"
 	}
-	timeStr := time.Unix(0,nanotimestamp).Format("2006-01-02 15:04:05.0000")
+	timeStr := time.Unix(0, nanotimestamp).Format("2006-01-02 15:04:05.0000")
 	return timeStr
 }
-
 
 // GetStatus 获取执行状态
 // verbose: 详细模式，显示任务的开始结束时间
 // status: 显示指定状态的任务
 // taskName: 显示某任务的状态
-func (a *Async) GetStatus(taskName string,verbose bool){
-	for k,v := range a.tasks{
-		jlog.Info(k,"Status:",a.getDspByCode(v.TaskStatus.taskStatus),",Begin:",a.timeStampToStr(v.TaskStatus.taskBegTime),",End:",a.timeStampToStr(v.TaskStatus.taskEndTime))
+func (a *Async) GetStatus(taskName string, verbose bool) {
+	for k, v := range a.tasks {
+		jlog.Info(k, "Status:", a.getDspByCode(v.TaskStatus.taskStatus), ",Begin:", a.timeStampToStr(v.TaskStatus.taskBegTime), ",End:", a.timeStampToStr(v.TaskStatus.taskEndTime))
 	}
 
 }
 
 // 等待直到全部任务执行完成
-func (a *Async) Wait(){
-	for a.count > 0{
+func (a *Async) Wait() {
+	for a.count > 0 {
 	}
 }
 
 // 根据code获取对应的状态描述
-func (a *Async) getDspByCode(code int) string{
+func (a *Async) getDspByCode(code int) string {
 	switch code {
 	case 0:
 		return "queue"
@@ -86,11 +114,12 @@ func (a *Async) getDspByCode(code int) string{
 	}
 	return "error"
 }
+
 // Add 添加异步执行任务
 // name 任务名，结果返回时也将放在任务名中
 // handler 任务执行函数，将需要被执行的函数导入到程序中
 // params 任务执行函数所需要的参数
-func (a *Async) Add(name string, handler interface{},printHandler interface{}, params ...interface{}) bool {
+func (a *Async) Add(name string, handler interface{}, printHandler interface{}, params ...interface{}) bool {
 	// 用来确保key的唯一性
 	if _, e := a.tasks[name]; e {
 		return false
@@ -102,20 +131,20 @@ func (a *Async) Add(name string, handler interface{},printHandler interface{}, p
 		paramNum := len(params)
 		if printHandler != nil && reflect.ValueOf(printHandler).Kind() == reflect.Func {
 			a.tasks[name] = asyncTask{
-				ReqHandler: handlerValue,
+				ReqHandler:   handlerValue,
 				PrintHandler: reflect.ValueOf(printHandler),
-				Params:     make([]reflect.Value, paramNum),
+				Params:       make([]reflect.Value, paramNum),
 				TaskStatus: &taskStatus{
 					taskStatus:  0,
 					taskBegTime: 0,
 					taskEndTime: 0,
 				},
 			}
-		}else{
+		} else {
 			a.tasks[name] = asyncTask{
-				ReqHandler: handlerValue,
+				ReqHandler:   handlerValue,
 				PrintHandler: reflect.Value{},
-				Params:     make([]reflect.Value, paramNum),
+				Params:       make([]reflect.Value, paramNum),
 				TaskStatus: &taskStatus{
 					taskStatus:  0,
 					taskBegTime: 0,
@@ -159,12 +188,12 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 			// 通过chans接受结果
 			case res := <-chans:
 				// 如果传入了printHandler,并且reqHandler函数返回参数的个数与printHandler函数形参个数相同
-				if a.tasks[res["taskName"].(string)].PrintHandler.IsValid() && a.tasks[res["taskName"].(string)].ReqHandler.Type().NumOut() == a.tasks[res["taskName"].(string)].PrintHandler.Type().NumIn(){
-					paramsArg := make([]reflect.Value,len(res["result"].([]interface{})))
-					for k,v := range res["result"].([]interface{}){
-						if reflect.ValueOf(v).IsValid(){
+				if a.tasks[res["taskName"].(string)].PrintHandler.IsValid() && a.tasks[res["taskName"].(string)].ReqHandler.Type().NumOut() == a.tasks[res["taskName"].(string)].PrintHandler.Type().NumIn() {
+					paramsArg := make([]reflect.Value, len(res["result"].([]interface{})))
+					for k, v := range res["result"].([]interface{}) {
+						if reflect.ValueOf(v).IsValid() {
 							paramsArg[k] = reflect.ValueOf(v)
-						}else{
+						} else {
 							paramsArg[k] = reflect.Zero(a.tasks[res["taskName"].(string)].PrintHandler.Type().In(k))
 						}
 					}
@@ -180,13 +209,30 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 	// 使用协程执行每一个task
 	// asyncTaskKey: name,asyncTaskVal:asyncTask
 	for asyncTaskKey, asyncTaskVal := range a.tasks {
+		//for {
+		//	// 如果当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
+		//	if a.taskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit{
+		//		break
+		//	}
+		//	jlog.Debug("taskMaxLimit:",jconfig.Conf.AsyncConfig.TaskMaxLimit,",currentCount:",a.taskCount)
+		//}
+		a.wait()
+		a.addTaskCount()
 		go func(taskName string, routinChans chan map[string]interface{}, task asyncTask) {
+			// 全局当前协程数量加一
+			jconfig.Conf.GlobalConfig.AddGlobalGoroutinCount()
+			// 若全局当前协程数量不小于全局配置中的最大协程数量，则等待
+			jconfig.Conf.GlobalConfig.Wait()
 			taskResult := make([]interface{}, 0)
 			defer func(taskName2 string, resultChans chan map[string]interface{}) {
 				// 设置任务的状态为结束
 				task.TaskStatus.taskStatus = 3
 				// 设置任务结束时间戳，毫秒
 				task.TaskStatus.taskEndTime = time.Now().UnixNano()
+				// 任务数量减一
+				a.subTaskCount()
+				// 总实时协程数量减一
+				jconfig.Conf.GlobalConfig.SubGlobalGoroutinCount()
 				// 通过chans传输结果
 				resultChans <- map[string]interface{}{"taskName": taskName2, "result": taskResult}
 			}(taskName, routinChans)

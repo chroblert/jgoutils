@@ -1,6 +1,7 @@
 package jhttp
 
 import (
+	"fmt"
 	"github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jrequests"
 	"strings"
@@ -71,15 +72,16 @@ func (hm *httpMsg) SetIsVerifySSL(b bool) {
 func (hm *httpMsg) SetIsUseSSL(b bool) {
 	hm.isUseSSL = b
 }
-func (hm *httpMsg) Repeat() {
+func (hm *httpMsg) Repeat() (statuscode int, headers map[string][]string, body []byte, err error) {
 	if !hm.isUseSSL {
 		hm.reqUrl = "http://" + hm.reqHost + hm.reqPath
 	} else {
 		hm.reqUrl = "https://" + hm.reqHost + hm.reqPath
 	}
 	if hm.reqMethod == "GET" {
-		jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+		return jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
 	} else if hm.reqMethod == "POST" {
-		jrequests.Post(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+		return jrequests.Post(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
 	}
+	return 0, nil, nil, fmt.Errorf("only GET or POST")
 }
