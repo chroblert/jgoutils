@@ -1,11 +1,10 @@
 package main
 
 import (
-	"github.com/chroblert/JC-GoUtils/jasync"
 	_ "github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jnet/jhttp"
-	"strconv"
+	//_ "github.com/chroblert/JC-GoUtils/jtest"
+	_ "github.com/chroblert/JC-GoUtils/jnet/jintruder"
 )
 
 const (
@@ -77,21 +76,21 @@ func main() {
 	defer jlog.Flush()
 
 	// === jhttp测试
-	fileName := "req.txt"
-	jhttpobj := jhttp.New()
-	jhttpobj.SetIsUseSSL(true)
-	jhttpobj.SetIsVerifySSL(false)
-	jhttpobj.InitWithFile(fileName)
-	jasyncobj := jasync.New()
-	for i := 0; i < 20; i++ {
-		jasyncobj.Add(strconv.Itoa(i), jhttpobj.Repeat, Print)
-	}
-	jasyncobj.Run()
-	//jhttpobj.Repeat()
-	jasyncobj.Wait()
-	//jasyncobj.GetStatus("",false)
-	jasyncobj.Clean()
-	jlog.Info("over")
+	//fileName := "req.txt"
+	//jhttpobj := jhttp.New()
+	//jhttpobj.SetIsUseSSL(true)
+	//jhttpobj.SetIsVerifySSL(false)
+	//jhttpobj.InitWithFile(fileName)
+	//jasyncobj := jasync.New()
+	//for i := 0; i < 20; i++ {
+	//	jasyncobj.Add(strconv.Itoa(i), jhttpobj.Repeat, Print)
+	//}
+	//jasyncobj.Run()
+	////jhttpobj.Repeat()
+	//jasyncobj.Wait()
+	////jasyncobj.GetStatus("",false)
+	//jasyncobj.Clean()
+	//jlog.Info("over")
 	//jlog.Println("test")
 
 	// ==== jconfig测试
