@@ -3,8 +3,10 @@ package main
 import (
 	_ "github.com/chroblert/JC-GoUtils/jconfig"
 	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/JC-GoUtils/jnet/jhttp"
+	"strings"
 	//_ "github.com/chroblert/JC-GoUtils/jtest"
-	_ "github.com/chroblert/JC-GoUtils/jnet/jintruder"
+	//_ "github.com/chroblert/JC-GoUtils/jnet/jintruder"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 
 func Print(statusCode int, headers map[string][]string, body []byte, err error) {
 	//fmt.Println(strings.TrimSpace(string(body)))
-	jlog.Info("状态码：", statusCode)
+	jlog.Info("状态码：", statusCode, strings.TrimSpace(string(body)))
 }
 
 //func print(test int){
@@ -76,11 +78,12 @@ func main() {
 	defer jlog.Flush()
 
 	// === jhttp测试
-	//fileName := "req.txt"
-	//jhttpobj := jhttp.New()
-	//jhttpobj.SetIsUseSSL(true)
-	//jhttpobj.SetIsVerifySSL(false)
-	//jhttpobj.InitWithFile(fileName)
+	fileName := "req.txt"
+	jhttpobj := jhttp.New()
+	jhttpobj.SetIsUseSSL(false)
+	jhttpobj.SetIsVerifySSL(false)
+	jhttpobj.InitWithFile(fileName)
+	jhttpobj.SetWordfiles("c:\\data\\test1.txt")
 	//jasyncobj := jasync.New()
 	//for i := 0; i < 20; i++ {
 	//	jasyncobj.Add(strconv.Itoa(i), jhttpobj.Repeat, Print)
@@ -90,7 +93,9 @@ func main() {
 	//jasyncobj.Wait()
 	////jasyncobj.GetStatus("",false)
 	//jasyncobj.Clean()
-	//jlog.Info("over")
+	//jhttpobj.Repeat(10)
+	jhttpobj.Intrude()
+	jlog.Info("over")
 	//jlog.Println("test")
 
 	// ==== jconfig测试

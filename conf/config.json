@@ -3,7 +3,7 @@
     "maxGoroutinCount": 100000
   },
   "requestsConfig": {
-    "proxy": "",
+    "proxy": "http://192.168.30.109:10809",
     "capath": "conf/cas",
     "isRedirect": false,
     "isVerifySSL": false,

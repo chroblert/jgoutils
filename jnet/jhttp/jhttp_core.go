@@ -1,9 +1,6 @@
 package jhttp
 
 import (
-	"fmt"
-	"github.com/chroblert/JC-GoUtils/jconfig"
-	"github.com/chroblert/JC-GoUtils/jrequests"
 	"strings"
 )
 
@@ -17,6 +14,14 @@ type httpMsg struct {
 	reqData     []byte
 	isVerifySSL bool
 	isUseSSL    bool
+
+	intruData *intruderData
+	//reqBytes []byte // 请求报文的字节数组
+	//wordFiles []string // 字典文件切片
+}
+type intruderData struct {
+	reqBytes  []byte   // 请求报文的字节数组
+	wordFiles []string // 字典文件切片
 }
 
 func New() *httpMsg {
@@ -29,6 +34,11 @@ func New() *httpMsg {
 		reqHeaders:  make(map[string]string),
 		reqData:     make([]byte, 0),
 		isVerifySSL: false,
+
+		intruData: &intruderData{
+			reqBytes:  make([]byte, 0),
+			wordFiles: make([]string, 0),
+		},
 	}
 }
 
@@ -66,22 +76,33 @@ func (hm *httpMsg) SetHost(target string) {
 
 }
 
+// 设置是否验证SSL
 func (hm *httpMsg) SetIsVerifySSL(b bool) {
 	hm.isVerifySSL = b
 }
+
+// 设置目标站点是否使用SSL
 func (hm *httpMsg) SetIsUseSSL(b bool) {
 	hm.isUseSSL = b
 }
-func (hm *httpMsg) Repeat() (statuscode int, headers map[string][]string, body []byte, err error) {
-	if !hm.isUseSSL {
-		hm.reqUrl = "http://" + hm.reqHost + hm.reqPath
-	} else {
-		hm.reqUrl = "https://" + hm.reqHost + hm.reqPath
+
+// 设置暴破用的字典所在的文件
+func (hm *httpMsg) SetWordfiles(wordfiles ...string) {
+	for _, v := range wordfiles {
+		hm.intruData.wordFiles = append(hm.intruData.wordFiles, v)
 	}
-	if hm.reqMethod == "GET" {
-		return jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
-	} else if hm.reqMethod == "POST" {
-		return jrequests.Post(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
-	}
-	return 0, nil, nil, fmt.Errorf("only GET or POST")
+}
+
+func (hm *httpMsg) Clean() {
+	hm.reqMethod = "Get"
+	hm.reqHost = ""
+	hm.reqUrl = "/"
+	hm.reqPath = "/"
+	hm.reqParams = make(map[string]string)
+	hm.reqHeaders = make(map[string]string)
+	hm.reqData = make([]byte, 0)
+	hm.isVerifySSL = false
+
+	hm.intruData.reqBytes = make([]byte, 0)
+	hm.intruData.wordFiles = make([]string, 0)
 }

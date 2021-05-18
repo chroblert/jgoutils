@@ -5,17 +5,27 @@ import (
 	"bytes"
 	"github.com/chroblert/JC-GoUtils/jlog"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 )
 
 func (hm *httpMsg) parseFromBurpReqFile(filename string) (reqLine []string, reqHeaders map[string]string, reqData []byte) {
+	tmpBytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		jlog.Fatal("读取文件错误")
+	}
+	// 添加至reqBytes
+	hm.intruData.reqBytes = append(hm.intruData.reqBytes, tmpBytes...)
+
+	// 下面解析http报文
 	f, _ := os.OpenFile(filename, os.O_RDONLY, 0666)
 	reader := bufio.NewReader(f)
 	// 读取请求行
 	//reqLine := make([]string,3)
 	jlog.Debug("请求行:")
 	if data, err := reader.ReadBytes('\n'); err == nil {
+
 		//jlog.Debug(string(data[:len(data)-2]))
 		reqLine = strings.Split(string(data[:len(data)-2]), " ")
 		hm.reqMethod, hm.reqPath, hm.reqParams = hm.getInfoFromReqLine(reqLine)
