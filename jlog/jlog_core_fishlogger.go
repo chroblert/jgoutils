@@ -3,7 +3,8 @@ package jlog
 import (
 	"bufio"
 	"fmt"
-	"github.com/fatih/color"
+	//"github.com/fatih/color"
+	"github.com/chroblert/JC-GoUtils/jthirdutil/color"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,8 +23,6 @@ func (fl *FishLogger) setLevel(lv logLevel) {
 	fl.level = lv
 }
 
-
-
 // 设置最大保存天数
 // 小于0不删除
 func (fl *FishLogger) setMaxStoreDays(ma int) {
@@ -32,7 +31,6 @@ func (fl *FishLogger) setMaxStoreDays(ma int) {
 	fl.maxStoreDays = ma
 }
 
-
 // 写入文件
 func (fl *FishLogger) flush() {
 	fl.mu.Lock()
@@ -40,14 +38,12 @@ func (fl *FishLogger) flush() {
 	fl.flushSync()
 }
 
-
 // 设置是否显示调用者的详细信息，所在文件及行号
 func (fl *FishLogger) setVerbose(b bool) {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	fl.verbose = b
 }
-
 
 // 设置控制台输出
 func (fl *FishLogger) setConsole(b bool) {
@@ -109,9 +105,9 @@ func (fl *FishLogger) println(lv logLevel, args ...interface{}) {
 	}
 	var buf *buffer
 	// 11用来表示Print()
-	if lv == 11{
+	if lv == 11 {
 		buf = &buffer{}
-	}else{
+	} else {
 		buf = fl.header(lv, 0)
 	}
 	fmt.Fprintln(buf, args...)
@@ -124,16 +120,17 @@ func (fl *FishLogger) printf(lv logLevel, format string, args ...interface{}) {
 		return
 	}
 	var buf *buffer
-	if lv == 11{
+	if lv == 11 {
 		buf = &buffer{}
-	}else{
+	} else {
 		buf = fl.header(lv, 0)
 	}
 	//buf := fl.header(lv, 0)
 	fmt.Fprintf(buf, format, args...)
-	if buf.Bytes()[buf.Len()-1] != '\n' {
-		buf.WriteByte('\n')
-	}
+	// 210518: 不自动追加\n
+	//if buf.Bytes()[buf.Len()-1] != '\n' {
+	//	buf.WriteByte('\n')
+	//}
 	fl.write(lv, buf)
 }
 
@@ -246,7 +243,7 @@ func (fl *FishLogger) flushSync() {
 	if fl.file != nil {
 		fl.writer.Flush() // 写入底层数据.写入到内存中
 		fl.file.Sync()    // 同步到磁盘.Sync递交文件的当前内容进行稳定的存储。
-		                  // 一般来说，这表示将文件系统的最近写入的数据在内存中的拷贝刷新到硬盘中稳定保存。
+		// 一般来说，这表示将文件系统的最近写入的数据在内存中的拷贝刷新到硬盘中稳定保存。
 	}
 }
 
@@ -291,12 +288,12 @@ func (fl *FishLogger) rotate() error {
 	for files, _ := filepath.Glob(pattern); len(files) > logCount; files, _ = filepath.Glob(pattern) {
 		// 删除log文件
 		os.Remove(files[0])
-		if fl.level == DEBUG{
-			tmpBuffer := fl.header(DEBUG,0)
-			fmt.Fprintf(tmpBuffer,"删除旧日志文件")
-			fmt.Fprintf(tmpBuffer,files[0])
+		if fl.level == DEBUG {
+			tmpBuffer := fl.header(DEBUG, 0)
+			fmt.Fprintf(tmpBuffer, "删除旧日志文件")
+			fmt.Fprintf(tmpBuffer, files[0])
 			//fmt.Fprintf(tmpBuffer,"\033[0m")
-			fmt.Fprintf(tmpBuffer,"\n")
+			fmt.Fprintf(tmpBuffer, "\n")
 			// 黑底蓝色
 			//fmt.Fprintf(os.Stdout,"\033[1;34;40m"+string(tmpBuffer.Bytes())+"\033[0m")
 			color.Blue(string(tmpBuffer.Bytes()))
@@ -305,8 +302,6 @@ func (fl *FishLogger) rotate() error {
 	}
 	return nil
 }
-
-
 
 // -------- 实例 自定义
 

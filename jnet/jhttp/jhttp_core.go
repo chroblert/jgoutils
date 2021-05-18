@@ -91,6 +91,7 @@ func (hm *httpMsg) SetWordfiles(wordfiles ...string) {
 	for _, v := range wordfiles {
 		hm.intruData.wordFiles = append(hm.intruData.wordFiles, v)
 	}
+	//jlog.Debug(hm.intruData.wordFiles)
 }
 
 func (hm *httpMsg) Clean() {

@@ -89,7 +89,8 @@ func (a *Async) timeStampToStr(nanotimestamp int64) string {
 // taskName: 显示某任务的状态
 func (a *Async) GetStatus(taskName string, verbose bool) {
 	for k, v := range a.tasks {
-		jlog.Info(k, "Status:", a.getDspByCode(v.TaskStatus.taskStatus), ",Begin:", a.timeStampToStr(v.TaskStatus.taskBegTime), ",End:", a.timeStampToStr(v.TaskStatus.taskEndTime))
+		//jlog.Info(k, "Status:", a.getDspByCode(v.TaskStatus.taskStatus), ",Begin:", a.timeStampToStr(v.TaskStatus.taskBegTime), ",End:", a.timeStampToStr(v.TaskStatus.taskEndTime))
+		jlog.Infof("%-5s Status:%-10s, Begin:%.24s ,End:%.24s \n", k, a.getDspByCode(v.TaskStatus.taskStatus), a.timeStampToStr(v.TaskStatus.taskBegTime), a.timeStampToStr(v.TaskStatus.taskEndTime))
 	}
 
 }
@@ -97,7 +98,11 @@ func (a *Async) GetStatus(taskName string, verbose bool) {
 // 等待直到全部任务执行完成
 func (a *Async) Wait() {
 	for a.count > 0 {
+		time.Sleep(time.Nanosecond * 500)
+		jlog.Debugf("%d/%d\r", a.GetTotal()-a.count, a.GetTotal())
+		//fmt.Printf("%d/%d\r",a.GetTotal()-a.count,a.GetTotal())
 	}
+	jlog.Debugf("所有task执行完毕\n")
 }
 
 // 根据code获取对应的状态描述

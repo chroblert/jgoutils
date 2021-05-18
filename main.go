@@ -94,7 +94,7 @@ func main() {
 	////jasyncobj.GetStatus("",false)
 	//jasyncobj.Clean()
 	//jhttpobj.Repeat(10)
-	jhttpobj.Intrude()
+	jhttpobj.Intrude(true)
 	jlog.Info("over")
 	//jlog.Println("test")
 
