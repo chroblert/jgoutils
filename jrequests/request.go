@@ -51,7 +51,15 @@ func SetTimeout(timeout int) OptionInterface {
 // 设置headers
 func SetHeaders(headers map[string]string) OptionInterface {
 	return newFuncOption(func(o *Option) {
-		o.Headers = headers
+		//o.Headers = headers
+		// 210519 update
+		for k, v := range headers {
+			if k == "User-Agent" || o.Headers[k] == "" {
+				o.Headers[k] = v
+			} else {
+				o.Headers[k] = o.Headers[k] + "; " + v
+			}
+		}
 	})
 }
 

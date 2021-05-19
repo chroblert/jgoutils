@@ -79,12 +79,16 @@ func main() {
 	defer jlog.Flush()
 
 	// === jhttp测试
-	fileName := "req.txt"
+	//fileName := "req.txt"
 	jhttpobj := jhttp.New()
-	jhttpobj.SetIsUseSSL(false)
+	jhttpobj.SetURL("https://test.com/query/string?q1=ddd&q2=xxx&q3[1]=xxxdd&q3[2]=qe2")
+	//jhttpobj.SetIsUseSSL(false)
+	//jhttpobj.SetProxy("http://192.168.30.109:10809")
 	jhttpobj.SetIsVerifySSL(false)
-	jhttpobj.InitWithFile(fileName)
-	jhttpobj.SetWordfiles("c:\\data\\test1.txt")
+	jhttpobj.SetReqMethod("GET")
+	jhttpobj.Repeat(5)
+	//jhttpobj.InitWithFile(fileName)
+	//jhttpobj.SetWordfiles("c:\\data\\test1.txt")
 	//jasyncobj := jasync.New()
 	//for i := 0; i < 20; i++ {
 	//	jasyncobj.Add(strconv.Itoa(i), jhttpobj.Repeat, Print)
@@ -95,7 +99,7 @@ func main() {
 	////jasyncobj.GetStatus("",false)
 	//jasyncobj.Clean()
 	//jhttpobj.Repeat(10)
-	jhttpobj.Intrude(true)
+	//jhttpobj.Intrude(true)
 	jlog.Info("over")
 	//jlog.Println("test")
 

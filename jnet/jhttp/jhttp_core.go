@@ -2,6 +2,8 @@ package jhttp
 
 import (
 	"github.com/chroblert/jgoutils/jconfig"
+	"github.com/chroblert/jgoutils/jlog"
+	"net/url"
 	"strings"
 )
 
@@ -76,6 +78,52 @@ func (hm *httpMsg) SetHost(target string) {
 	}
 	hm.reqHost = target[strings.Index(target, "/")+2:]
 
+}
+
+// 设置请求方法
+func (hm *httpMsg) SetReqMethod(reqMethod string) {
+	hm.reqMethod = reqMethod
+}
+
+// 设置请求体
+func (hm *httpMsg) SetReqData(reqDataStr string) {
+	hm.reqData = []byte(reqDataStr)
+}
+
+// 设置单个header
+func (hm *httpMsg) SetHeader(header map[string]string) {
+	for k, v := range header {
+		if hm.reqHeaders[k] == "" {
+			hm.reqHeaders[k] = v
+		} else {
+			hm.reqHeaders[k] = hm.reqHeaders[k] + "; " + v
+		}
+	}
+}
+
+// 设置URL，包含querystring
+func (hm *httpMsg) SetURL(requrl string) {
+	urlobj, err := url.ParseRequestURI(requrl)
+	if err != nil {
+		jlog.Fatal("错误", err)
+	}
+	//jlog.Debug(urlobj.Scheme)
+	//jlog.Debug(urlobj.Host)
+	//jlog.Debug(urlobj.Path)
+	//jlog.Debug(urlobj.Query())
+	//jlog.Debug(urlobj.ForceQuery)
+	hm.reqPath = urlobj.Path
+	for k, v := range urlobj.Query() {
+		hm.reqParams[k] = strings.Join(v, "")
+	}
+	hm.reqHost = urlobj.Host
+	if strings.ContainsAny(urlobj.Scheme, "https") {
+		hm.isUseSSL = true
+	} else {
+		hm.isUseSSL = false
+	}
+
+	//jlog.Debug(hm.reqParams)
 }
 
 // 设置是否验证SSL
