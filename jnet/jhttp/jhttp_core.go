@@ -112,12 +112,16 @@ func (hm *httpMsg) SetURL(requrl string) {
 	//jlog.Debug(urlobj.Path)
 	//jlog.Debug(urlobj.Query())
 	//jlog.Debug(urlobj.ForceQuery)
-	hm.reqPath = urlobj.Path
+	if urlobj.Path == "" {
+		hm.reqPath = "/"
+	} else {
+		hm.reqPath = urlobj.Path
+	}
 	for k, v := range urlobj.Query() {
 		hm.reqParams[k] = strings.Join(v, "")
 	}
 	hm.reqHost = urlobj.Host
-	if strings.ContainsAny(urlobj.Scheme, "https") {
+	if strings.Contains(urlobj.Scheme, "https") {
 		hm.isUseSSL = true
 	} else {
 		hm.isUseSSL = false
