@@ -3,9 +3,9 @@ package jintruder
 import (
 	"bufio"
 	"bytes"
-	"github.com/chroblert/JC-GoUtils/jconv"
-	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jnet/jhttp"
+	"github.com/chroblert/jgoutils/jconv"
+	"github.com/chroblert/jgoutils/jlog"
+	"github.com/chroblert/jgoutils/jnet/jhttp"
 	"io"
 	"io/ioutil"
 	"os"

@@ -8,8 +8,8 @@ package jasync
 // 通过调用 GetStatus() 来获取任务执行的状态
 // 通过调用 GetTotal() 来获取所有任务的数量
 import (
-	"github.com/chroblert/JC-GoUtils/jconfig"
-	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/jgoutils/jconfig"
+	"github.com/chroblert/jgoutils/jlog"
 	"reflect"
 	"sync"
 	"time"

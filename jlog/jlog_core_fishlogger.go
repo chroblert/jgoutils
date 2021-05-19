@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	//"github.com/fatih/color"
-	"github.com/chroblert/JC-GoUtils/jthirdutil/color"
+	"github.com/chroblert/jgoutils/jthirdutil/color"
 	"log"
 	"os"
 	"path/filepath"

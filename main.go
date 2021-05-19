@@ -1,12 +1,12 @@
 package main
 
 import (
-	_ "github.com/chroblert/JC-GoUtils/jconfig"
-	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jnet/jhttp"
+	_ "github.com/chroblert/jgoutils/jconfig"
+	"github.com/chroblert/jgoutils/jlog"
+	"github.com/chroblert/jgoutils/jnet/jhttp"
 	"strings"
-	//_ "github.com/chroblert/JC-GoUtils/jtest"
-	//_ "github.com/chroblert/JC-GoUtils/jnet/jintruder"
+	//_ "github.com/chroblert/jgoutils/jtest"
+	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
 )
 
 const (

@@ -3,7 +3,7 @@ package jhttp
 import (
 	"bufio"
 	"bytes"
-	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/jgoutils/jlog"
 	"io"
 	"io/ioutil"
 	"os"

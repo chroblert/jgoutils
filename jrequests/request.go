@@ -1,6 +1,6 @@
 package jrequests
 
-import "github.com/chroblert/JC-GoUtils/jconfig"
+import "github.com/chroblert/jgoutils/jconfig"
 
 // 请求选项的结构体
 type Option struct {

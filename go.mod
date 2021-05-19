@@ -1,4 +1,4 @@
-module github.com/chroblert/JC-GoUtils
+module github.com/chroblert/jgoutils
 
 go 1.16
 

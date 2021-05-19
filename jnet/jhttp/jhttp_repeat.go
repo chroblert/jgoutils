@@ -2,10 +2,10 @@ package jhttp
 
 import (
 	"fmt"
-	"github.com/chroblert/JC-GoUtils/jasync"
-	"github.com/chroblert/JC-GoUtils/jconfig"
-	"github.com/chroblert/JC-GoUtils/jlog"
-	"github.com/chroblert/JC-GoUtils/jrequests"
+	"github.com/chroblert/jgoutils/jasync"
+	"github.com/chroblert/jgoutils/jconfig"
+	"github.com/chroblert/jgoutils/jlog"
+	"github.com/chroblert/jgoutils/jrequests"
 	"strconv"
 )
 

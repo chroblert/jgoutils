@@ -2,7 +2,7 @@ package jhttp
 
 import (
 	"bytes"
-	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/jgoutils/jlog"
 	"strings"
 )
 

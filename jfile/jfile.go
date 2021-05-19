@@ -1,7 +1,7 @@
 package jfile
 
 import (
-	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/jgoutils/jlog"
 	"io/ioutil"
 	"os"
 	"os/exec"

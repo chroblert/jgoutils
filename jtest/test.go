@@ -1,8 +1,8 @@
 package jtest
 
 import (
-	"github.com/chroblert/JC-GoUtils/jconv"
-	"github.com/chroblert/JC-GoUtils/jlog"
+	"github.com/chroblert/jgoutils/jconv"
+	"github.com/chroblert/jgoutils/jlog"
 )
 
 func init() {

@@ -1,7 +1,7 @@
 package jlog
 
 import (
-	"github.com/chroblert/JC-GoUtils/jconfig"
+	"github.com/chroblert/jgoutils/jconfig"
 	"os"
 	"path/filepath"
 	"strings"
