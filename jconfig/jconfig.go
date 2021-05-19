@@ -82,6 +82,8 @@ var Conf *config = new(config)
 
 // 从json文件中读取配置
 func init() {
+	//InitWithFile("conf/config.json")
+	//return
 	// 配置文件所在的路径
 	viper.AddConfigPath("conf")
 	// 配置文件的名称
@@ -125,6 +127,51 @@ func init() {
 	}
 	//log.Println(Conf.GlobalConfig)
 
+}
+
+func InitWithFile(configFile string) {
+	//// 配置文件所在的路径
+	//viper.AddConfigPath("conf")
+	//// 配置文件的名称
+	//viper.SetConfigName("config")
+	viper.SetConfigFile(configFile)
+	// 配置文件的类型
+	viper.SetConfigType("json")
+	// 读取配置文件到viper中
+	if err := viper.ReadInConfig(); err != nil {
+		log.Println("viper 读取配置文件失败", err)
+		log.Println("使用内置的配置")
+		setDefaultConfig()
+		return
+	}
+	// 将读取的配置信息保存至全局变量Conf
+	if err := viper.Unmarshal(&Conf); err != nil {
+		log.Println("viper 反序列化配置文件失败", err)
+		log.Println("使用内置的配置")
+		setDefaultConfig()
+		return
+	}
+	// 监控配置文件变化
+	viper.WatchConfig()
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		log.Println("配置文件被修改")
+		if err := viper.Unmarshal(&Conf); err != nil {
+			log.Println("viper 反序列化配置文件失败")
+			return
+		}
+	})
+	//log.Println(Conf.GlobalConfig)
+	//log.Println("LogConfig:",Conf.LogConfig)
+	//log.Println("AsyncConfig:",Conf.AsyncConfig)
+	//log.Println("RequestsConfig:",Conf.RequestsConfig)
+
+	// 配置GlobalConfig的锁
+	if Conf.GlobalConfig != nil && Conf.GlobalConfig.mu == nil {
+		Conf.GlobalConfig.mu = new(sync.RWMutex)
+	}
+	if Conf.AsyncConfig != nil && Conf.GlobalConfig.mu == nil {
+		Conf.AsyncConfig.mu = new(sync.RWMutex)
+	}
 }
 
 // 设置默认的配置
