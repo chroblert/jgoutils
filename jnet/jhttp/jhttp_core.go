@@ -1,6 +1,7 @@
 package jhttp
 
 import (
+	"github.com/chroblert/jgoutils/jconfig"
 	"strings"
 )
 
@@ -16,6 +17,7 @@ type httpMsg struct {
 	isUseSSL    bool
 
 	intruData *intruderData
+	proxy     string
 	//reqBytes []byte // 请求报文的字节数组
 	//wordFiles []string // 字典文件切片
 }
@@ -84,6 +86,22 @@ func (hm *httpMsg) SetIsVerifySSL(b bool) {
 // 设置目标站点是否使用SSL
 func (hm *httpMsg) SetIsUseSSL(b bool) {
 	hm.isUseSSL = b
+}
+
+// 设置目标站点使用的代理
+func (hm *httpMsg) SetProxy(proxy string) {
+	hm.proxy = proxy
+}
+
+// 获取代理
+func (hm *httpMsg) getProxy() string {
+	if hm.proxy != "" {
+		return hm.proxy
+	} else if jconfig.Conf.RequestsConfig.Proxy != "" {
+		return jconfig.Conf.RequestsConfig.Proxy
+	} else {
+		return ""
+	}
 }
 
 // 设置暴破用的字典所在的文件

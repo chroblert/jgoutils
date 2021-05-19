@@ -56,7 +56,7 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool) {
 				jlog.Error("error,字典个数少于标识的个数")
 			}
 		}
-		jasyncobj.Add(strconv.Itoa(i), singleIntruder, nil, newReqBytes, hm.isUseSSL)
+		jasyncobj.Add(strconv.Itoa(i), singleIntruder, nil, newReqBytes, hm.isUseSSL, hm.getProxy())
 		////jlog.Info(string(reqbytes))
 		//jhttpobj := jhttp.New()
 		//jhttpobj.InitWithBytes(reqbytes)
@@ -74,10 +74,11 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool) {
 	jasyncobj.Clean()
 }
 
-func singleIntruder(reqBytes []byte, isUseSSL bool) {
+func singleIntruder(reqBytes []byte, isUseSSL bool, proxy string) {
 	hm := New()
 	hm.InitWithBytes(reqBytes)
 	hm.SetIsUseSSL(isUseSSL)
 	hm.SetIsVerifySSL(false)
+	hm.SetProxy(proxy)
 	hm.Repeat()
 }

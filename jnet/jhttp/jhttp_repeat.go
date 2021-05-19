@@ -20,9 +20,9 @@ func (hm *httpMsg) Repeat(counts ...int) (statuscode int, headers map[string][]s
 	}
 	if len(counts) == 0 || counts[0] == 1 {
 		if hm.reqMethod == "GET" {
-			return jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+			return jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
 		} else if hm.reqMethod == "POST" {
-			return jrequests.Post(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+			return jrequests.Post(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
 		} else {
 			return 0, nil, nil, fmt.Errorf("only GET or POST")
 		}
