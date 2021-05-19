@@ -1,5 +1,5 @@
 // +build ignore
-package jgoutils
+package main
 
 import (
 	_ "github.com/chroblert/jgoutils/jconfig"
@@ -25,7 +25,7 @@ func Print(statusCode int, headers map[string][]string, body []byte, err error) 
 //	fmt.Println(test)
 //}
 
-func main_test() {
+func main() {
 	//start := time.Now()
 	//ch := make(chan jasyncrequests.Asyncresponse)
 	//for i:= 0;i<10;i++{

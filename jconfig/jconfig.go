@@ -78,7 +78,7 @@ func (p *globalConfig) Wait() {
 	p.mu.RUnlock()
 }
 
-var Conf *config
+var Conf *config = new(config)
 
 // 从json文件中读取配置
 func init() {
@@ -131,6 +131,7 @@ func init() {
 func setDefaultConfig() {
 	Conf.GlobalConfig = &globalConfig{
 		MaxGoroutinCount: 100000,
+		mu:               new(sync.RWMutex),
 	}
 	Conf.RequestsConfig = &requestsConfig{
 		Proxy:       "",
@@ -141,6 +142,7 @@ func setDefaultConfig() {
 	}
 	Conf.AsyncConfig = &asyncConfig{
 		TaskMaxLimit: 10000,
+		mu:           new(sync.RWMutex),
 	}
 	Conf.LogConfig = &logConfig{
 		LV:            0,
