@@ -89,7 +89,7 @@ func main() {
 	jhttpobj.SetIsVerifySSL(false)
 	//jhttpobj.SetReqMethod("GET")
 	jhttpobj.Intrude(false, func(statuscode int, headers map[string][]string, body []byte, err error) {
-		jlog.Info(statuscode, err)
+		//jlog.Info(statuscode, err)
 	})
 	//jlog.Info(tmp)
 	//jhttpobj.Repeat(5)
