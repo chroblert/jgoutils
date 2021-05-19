@@ -3,7 +3,6 @@ package jhttp
 import (
 	"fmt"
 	"github.com/chroblert/jgoutils/jasync"
-	"github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jrequests"
 	"strconv"
@@ -30,11 +29,11 @@ func (hm *httpMsg) Repeat(counts ...int) (statuscode int, headers map[string][]s
 		jasyncobj := jasync.New()
 		if hm.reqMethod == "GET" {
 			for i := 0; i < counts[0]; i++ {
-				jasyncobj.Add(strconv.Itoa(i), jrequests.Get, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+				jasyncobj.Add(strconv.Itoa(i), jrequests.Get, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
 			}
 		} else if hm.reqMethod == "POST" {
 			for i := 0; i < counts[0]; i++ {
-				jasyncobj.Add(strconv.Itoa(i), jrequests.Get, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(jconfig.Conf.RequestsConfig.Proxy))
+				jasyncobj.Add(strconv.Itoa(i), jrequests.Get, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
 			}
 		} else {
 			return 0, nil, nil, fmt.Errorf("only GET or POST")
