@@ -3,6 +3,7 @@ package jhttp
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/chroblert/jgoutils/jasync"
 	"github.com/chroblert/jgoutils/jconv"
 	"github.com/chroblert/jgoutils/jlog"
@@ -12,7 +13,7 @@ import (
 	"strconv"
 )
 
-func (hm *httpMsg) Intrude(isPrintAllStaus bool) {
+func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode int, headers map[string][]string, body []byte, err error)) map[string][]interface{} {
 	if len(hm.intruData.wordFiles) < 1 {
 		jlog.Fatal("请设置至少一个字典文件")
 	}
@@ -56,7 +57,7 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool) {
 				jlog.Error("error,字典个数少于标识的个数")
 			}
 		}
-		jasyncobj.Add(strconv.Itoa(i), singleIntruder, nil, newReqBytes, hm.isUseSSL, hm.getProxy())
+		jasyncobj.Add(strconv.Itoa(i), singleIntruder, printWithFilter, newReqBytes, hm.isUseSSL, hm.getProxy())
 		////jlog.Info(string(reqbytes))
 		//jhttpobj := jhttp.New()
 		//jhttpobj.InitWithBytes(reqbytes)
@@ -71,14 +72,18 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool) {
 			jasyncobj.GetStatus("", false)
 		}
 	}
+	result := jasyncobj.GetTasksResult()
 	jasyncobj.Clean()
+	return result
 }
 
-func singleIntruder(reqBytes []byte, isUseSSL bool, proxy string) {
-	hm := New()
-	hm.InitWithBytes(reqBytes)
-	hm.SetIsUseSSL(isUseSSL)
-	hm.SetIsVerifySSL(false)
-	hm.SetProxy(proxy)
-	hm.Repeat()
+func singleIntruder(reqBytes []byte, isUseSSL bool, proxy string) (statuscode int, headers map[string][]string, body []byte, err error) {
+	hm2 := New()
+	hm2.InitWithBytes(reqBytes)
+	hm2.SetIsUseSSL(isUseSSL)
+	hm2.SetIsVerifySSL(false)
+	hm2.SetProxy(proxy)
+	tmp := hm2.Repeat()
+	hm2.Clean()
+	return tmp["0"][0].(int), tmp["0"][1].(map[string][]string), tmp["0"][2].([]byte), fmt.Errorf("%v", tmp["0"][3])
 }

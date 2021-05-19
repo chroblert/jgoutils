@@ -32,16 +32,23 @@ type Async struct {
 	taskCount int
 	tasks     map[string]asyncTask
 	mu        *sync.RWMutex
+
+	//210519：获取异步执行结果
+	tasksResult map[string][]interface{}
 }
 
 // New 创建一个新的异步执行对象
 func New() Async {
-	return Async{tasks: make(map[string]asyncTask), mu: new(sync.RWMutex)}
+	return Async{tasks: make(map[string]asyncTask), mu: new(sync.RWMutex), tasksResult: make(map[string][]interface{})}
 }
 
 //GetTotal 获取总共的任务数
 func (a *Async) GetTotal() int {
 	return a.total
+}
+
+func (a *Async) GetCount() int {
+	return a.count
 }
 
 func (a *Async) addTaskCount() {
@@ -90,19 +97,32 @@ func (a *Async) timeStampToStr(nanotimestamp int64) string {
 func (a *Async) GetStatus(taskName string, verbose bool) {
 	for k, v := range a.tasks {
 		//jlog.Info(k, "Status:", a.getDspByCode(v.TaskStatus.taskStatus), ",Begin:", a.timeStampToStr(v.TaskStatus.taskBegTime), ",End:", a.timeStampToStr(v.TaskStatus.taskEndTime))
-		jlog.Infof("%-5s Status:%-10s, Begin:%.24s ,End:%.24s \n", k, a.getDspByCode(v.TaskStatus.taskStatus), a.timeStampToStr(v.TaskStatus.taskBegTime), a.timeStampToStr(v.TaskStatus.taskEndTime))
+		jlog.Debugf("%-5s Status:%-10s, Begin:%.24s ,End:%.24s \n", k, a.getDspByCode(v.TaskStatus.taskStatus), a.timeStampToStr(v.TaskStatus.taskBegTime), a.timeStampToStr(v.TaskStatus.taskEndTime))
 	}
 
 }
 
+// GetTasksResult 获取所有任务的执行结果
+func (a *Async) GetTasksResult() map[string][]interface{} {
+	return a.tasksResult
+}
+
+// GetTaskResult 获取任务的某个执行结果
+func (a *Async) GetTaskResult(taskName string) []interface{} {
+	return a.tasksResult[taskName]
+}
+
 // 等待直到全部任务执行完成
 func (a *Async) Wait() {
-	for a.count > 0 {
+	for {
+		if a.GetCount() < 1 {
+			break
+		}
 		time.Sleep(time.Nanosecond * 500)
-		jlog.Debugf("%d/%d\r", a.GetTotal()-a.count, a.GetTotal())
+		jlog.Infof("%d/%d\r", a.GetTotal()-a.GetCount(), a.GetTotal())
 		//fmt.Printf("%d/%d\r",a.GetTotal()-a.count,a.GetTotal())
 	}
-	jlog.Debugf("所有task执行完毕\n")
+	jlog.Infof("%d/%d,所有task执行完毕\n", a.GetTotal()-a.count, a.GetTotal())
 }
 
 // 根据code获取对应的状态描述
@@ -177,6 +197,7 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 	if a.count < 1 {
 		return nil, false
 	}
+	// [任务名]结果切片
 	result := make(chan map[string][]interface{})
 	chans := make(chan map[string]interface{}, a.count)
 	// 开启一个协程，用来接收调用函数的结果
@@ -206,6 +227,8 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 					a.tasks[res["taskName"].(string)].PrintHandler.Call(paramsArg)
 				}
 				rs[res["taskName"].(string)] = res["result"].([]interface{})
+				// 210519: Add 添加每个任务执行的结果
+				a.tasksResult[res["taskName"].(string)] = res["result"].([]interface{})
 				a.count--
 
 			}
@@ -247,6 +270,7 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 			task.TaskStatus.taskBegTime = time.Now().UnixNano()
 			// 调用传入的函数
 			values := task.ReqHandler.Call(task.Params)
+			// 传入的函数执行的结果保存在values中
 			if valuesNum := len(values); valuesNum > 0 {
 				resultItems := make([]interface{}, valuesNum)
 				// asyncTaskKey:int,asyncTaskVal:value
