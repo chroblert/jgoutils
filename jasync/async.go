@@ -119,7 +119,7 @@ func (a *Async) Wait() {
 			break
 		}
 		time.Sleep(time.Nanosecond * 500)
-		jlog.Infof("%d/%d\r", a.GetTotal()-a.GetCount(), a.GetTotal())
+		jlog.Infof("%d/%d\r", a.GetTotal()-a.count, a.GetTotal())
 		//fmt.Printf("%d/%d\r",a.GetTotal()-a.count,a.GetTotal())
 	}
 	jlog.Infof("%d/%d,所有task执行完毕\n", a.GetTotal()-a.count, a.GetTotal())

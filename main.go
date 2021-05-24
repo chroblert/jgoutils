@@ -70,7 +70,7 @@ func main() {
 	//asyncobj.Clean()
 
 	// ==== jlog测试
-	jlog.SetLevel(jlog.DEBUG)
+	jlog.SetLevel(jlog.INFO)
 	//jlog.Debug("debug")
 	//jlog.Info("info")
 	//jlog.Warn("warn")
@@ -89,7 +89,7 @@ func main() {
 	jhttpobj.SetIsVerifySSL(false)
 	//jhttpobj.SetReqMethod("GET")
 	jhttpobj.Intrude(false, func(statuscode int, headers map[string][]string, body []byte, err error) {
-		//jlog.Info(statuscode, err)
+		jlog.Info(statuscode, err)
 	})
 	//jlog.Info(tmp)
 	//jhttpobj.Repeat(5)
