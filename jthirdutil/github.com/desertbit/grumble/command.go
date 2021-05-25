@@ -116,3 +116,8 @@ func (c *Command) AddCommand(cmd *Command) {
 
 	c.commands.Add(cmd)
 }
+
+func (c *Command) SetParam(param string,paramValue string) error{
+	// 如何设置flagMapItem
+	return nil
+}

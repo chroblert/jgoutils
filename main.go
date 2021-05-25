@@ -5,7 +5,7 @@ package main
 import (
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
-	"github.com/chroblert/jgoutils/jnet/jhttp"
+	grumble "github.com/chroblert/jgoutils/jthirdutil/github.com/desertbit/grumble2"
 	"strings"
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
@@ -80,18 +80,18 @@ func main() {
 	defer jlog.Flush()
 
 	// === jhttp测试
-	fileName := "req.txt"
-	jhttpobj := jhttp.New()
-	//jhttpobj.SetURL("https://test.com/query/string?q1=ddd&q2=xxx&q3[1]=xxxdd&q3[2]=qe2")
-	jhttpobj.InitWithFile(fileName)
-	jhttpobj.SetWordfiles("c:\\data\\test1.txt")
-	jhttpobj.SetIsUseSSL(false)
-	jhttpobj.SetProxy("http://192.168.30.109:10809")
-	jhttpobj.SetIsVerifySSL(false)
-	//jhttpobj.SetReqMethod("GET")
-	jhttpobj.Intrude(false, func(statuscode int, headers map[string][]string, body []byte, err error) {
-		jlog.Info(statuscode, err)
-	})
+	//fileName := "req.txt"
+	//jhttpobj := jhttp.New()
+	////jhttpobj.SetURL("https://test.com/query/string?q1=ddd&q2=xxx&q3[1]=xxxdd&q3[2]=qe2")
+	//jhttpobj.InitWithFile(fileName)
+	//jhttpobj.SetWordfiles("c:\\data\\test1.txt")
+	//jhttpobj.SetIsUseSSL(false)
+	//jhttpobj.SetProxy("http://192.168.30.109:10809")
+	//jhttpobj.SetIsVerifySSL(false)
+	////jhttpobj.SetReqMethod("GET")
+	//jhttpobj.Intrude(false, func(statuscode int, headers map[string][]string, body []byte, err error) {
+	//	jlog.Info(statuscode, err)
+	//})
 	//jlog.Info(tmp)
 	//jhttpobj.Repeat(5)
 	//jhttpobj.InitWithFile(fileName)
@@ -118,4 +118,42 @@ func main() {
 	//jhttpobj := jhttp.New()
 	//jhttpobj.InitWithBytes([]byte("GET / http/1.1\r\nHost: baidu.com\r\nContent-Length: 18\r\n\r\ntest"))
 	//jhttpobj.Repeat()
+
+	// grumble2测试
+	var app = grumble.New(&grumble.Config{
+		Name:                  "app",
+		Description:           "app test",
+		Flags:                 nil,
+		HistoryFile:           "",
+		HistoryLimit:          0,
+		NoColor:               false,
+		Prompt:                "app >> ",
+		PromptColor:           nil,
+		MultiPrompt:           "",
+		MultiPromptColor:      nil,
+		ASCIILogoColor:        nil,
+		ErrorColor:            nil,
+		HelpHeadlineUnderline: false,
+		HelpSubCommands:       false,
+		HelpHeadlineColor:     nil,
+		CurrentCommand:        "app",
+	})
+	app.AddCommand(&grumble.Command{
+		Name:      "test",
+		Aliases:   nil,
+		Help:      "test test",
+		LongHelp:  "",
+		HelpGroup: "",
+		Usage:     "test",
+		Flags: func(f *grumble.Flags) {
+			f.String("s","stest","","string test")
+		},
+		Args:      nil,
+		Run: func(c *grumble.Context) error {
+			jlog.Println(c.Flags.String("stest"))
+			return nil
+		},
+		Completer: nil,
+	})
+	app.Run()
 }
