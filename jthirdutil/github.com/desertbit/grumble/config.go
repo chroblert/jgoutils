@@ -71,6 +71,9 @@ type Config struct {
 	HelpHeadlineUnderline bool
 	HelpSubCommands       bool
 	HelpHeadlineColor     *color.Color
+
+	// JC0o0l Add
+	CurrentCommand string
 }
 
 // SetDefaults sets the default values if not set.

@@ -58,6 +58,9 @@ type App struct {
 	printCommandHelp func(a *App, cmd *Command, shell bool)
 	interruptHandler func(a *App, count int)
 	printASCIILogo   func(a *App)
+
+	// JC0o0l Add
+	currentCommand string
 }
 
 // New creates a new app.
@@ -79,6 +82,7 @@ func New(c *Config) (a *App) {
 		printHelp:        defaultPrintHelp,
 		printCommandHelp: defaultPrintCommandHelp,
 		interruptHandler: defaultInterruptHandler,
+		currentCommand:   c.CurrentCommand,
 	}
 
 	// Register the builtin flags.
@@ -106,6 +110,19 @@ func (a *App) SetPrompt(p string) {
 	a.currentPrompt = p
 }
 
+// GetPromp get a prompt string
+func (a *App) GetPrompt() string{
+	return a.currentPrompt
+}
+
+//
+func (a *App) SetCurrentCommand(c string){
+	a.currentCommand = c
+}
+
+func (a *App) GetCurrentCommand() string{
+	return a.currentCommand
+}
 // SetDefaultPrompt resets the current prompt to the default prompt as
 // configured in the config.
 func (a *App) SetDefaultPrompt() {
