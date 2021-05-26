@@ -147,10 +147,14 @@ func main() {
 		Usage:     "test",
 		Flags: func(f *grumble.Flags) {
 			f.String("s","stest","","string test")
+			f.Bool("b","isss",false,"bool test")
+			f.StringSlice("c","slice",[]string{},"string slice test")
 		},
 		Args:      nil,
 		Run: func(c *grumble.Context) error {
 			jlog.Println(c.Flags.String("stest"))
+			jlog.Println(c.Flags.Bool("isss"))
+			jlog.Println(c.Flags.StringSlice("slice"))
 			return nil
 		},
 		Completer: nil,

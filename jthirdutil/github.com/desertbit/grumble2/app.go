@@ -468,24 +468,35 @@ func (a *App) Run() (err error) {
 			argName := strings.Split(arg,"=")[0]
 			argValue := strings.Split(arg,"=")[1:]
 			argValueStr := strings.Join(argValue,"=")
-			jlog.Info("argName:",argName)
-			jlog.Info("argValue:",argValueStr)
+			jlog.Debug("argName:",argName)
+			jlog.Debug("argValue:",argValueStr)
 			// 判断argName是否在当前命令的flag中
 			for _,v := range tmpCommand.flags.list {
 				if argName == v.Long{
-					jlog.Info(tmpCommand.jflagMaps)
+					//jlog.Info(tmpCommand.jflagMaps)
 					if tmpCommand.jflagMaps == nil{
 						tmpCommand.jflagMaps = make(FlagMap)
 					}
-					jlog.Info(tmpCommand.jflagMaps==nil)
-					tmpCommand.jflagMaps[argName] = &FlagMapItem{
-						Value:     argValueStr,
-						IsDefault: false,
+					// 判断参数的类型
+					for _,p := range tmpCommand.flags.parsers{
+						longFlag := "--"+argName
+						_,isParsed,err := p(longFlag,argValueStr,[]string{},tmpCommand.jflagMaps)
+						if err != nil{
+							jlog.Error(err)
+							return err
+						}else if isParsed{
+							break
+						}
 					}
+					//tmpCommand.jflagMaps[argName] = &FlagMapItem{
+					//	Value:     argValueStr,
+					//	IsDefault: false,
+					//}
+					//jlog.Debug(tmpCommand.jflagMaps)
 					break
 				}
 			}
-			jlog.Info(tmpCommand.jflagMaps)
+			jlog.Debug(tmpCommand.jflagMaps)
 			return nil
 		},
 	})
