@@ -397,12 +397,32 @@ func (a *App) Run() (err error) {
 			a.String("commandName","command name")
 		},
 		Run: func(c *Context) error {
+			// 切换回app
+			if c.Args.String("commandName") == c.App.config.Name{
+				//c.App.currentPrompt = c.App.config.Name
+				c.App.currentPrompt = c.App.config.prompt()
+				c.App.currentCommand = ""
+				return nil
+			}
+			// 获取当前command
+			tmpCommand := c.App.Commands().Get(c.Args.String("commandName"))
+			if tmpCommand == nil{
+				jlog.Errorf("error: command u input not exist\n")
+				return fmt.Errorf("error: command u input not exist\n")
+			}
 			// 获取命令
 			c.App.currentCommand = c.Args.String("commandName")
 			// 设置prompt
 			c.App.currentPrompt = c.Args.String("commandName") + " >> "
-			//
-
+			// 初始化jflagMaps
+			if tmpCommand.jflagMaps == nil{
+				tmpCommand.jflagMaps = make(FlagMap)
+				_,err := tmpCommand.flags.parse([]string{},tmpCommand.jflagMaps)
+				if err != nil{
+					jlog.Error(err)
+					return err
+				}
+			}
 			return nil
 		},
 	})
@@ -424,16 +444,26 @@ func (a *App) Run() (err error) {
 				return fmt.Errorf("error: command u input not exist\n")
 			}
 			// 输出当前flag
-			jlog.Infof("flag\tvalue\tisDefault\n")
-			jlog.Infof("========================\n")
+			jlog.Infof("\nflag\tvalue\tisDefault\n")
+			jlog.Printf("========================\n")
+			//for _,v := range tmpCommand.flags.list{
+			//	isDefault := true
+			//	if _,ok := tmpCommand.jflagMaps[v.Long];ok{
+			//		isDefault = false
+			//		jlog.Infof("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,isDefault)
+			//	}else{
+			//		jlog.Infof("%v\t%v\t%v\n",v.Long,v.Default,isDefault)
+			//	}
+			//}
 			for _,v := range tmpCommand.flags.list{
-				isDefault := true
-				if _,ok := tmpCommand.jflagMaps[v.Long];ok{
-					isDefault = false
-					jlog.Infof("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,isDefault)
-				}else{
-					jlog.Infof("%v\t%v\t%v\n",v.Long,v.Default,isDefault)
-				}
+				jlog.Printf("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,tmpCommand.jflagMaps[v.Long].IsDefault)
+				//isDefault := true
+				//if _,ok := tmpCommand.jflagMaps[v.Long];ok{
+				//	isDefault = false
+				//	jlog.Printf("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,isDefault)
+				//}else{
+				//	jlog.Printf("%v\t%v\t%v\n",v.Long,v.Default,isDefault)
+				//}
 			}
 			return nil
 		},
@@ -472,31 +502,23 @@ func (a *App) Run() (err error) {
 			jlog.Debug("argValue:",argValueStr)
 			// 判断argName是否在当前命令的flag中
 			for _,v := range tmpCommand.flags.list {
-				if argName == v.Long{
-					//jlog.Info(tmpCommand.jflagMaps)
-					if tmpCommand.jflagMaps == nil{
-						tmpCommand.jflagMaps = make(FlagMap)
-					}
-					// 判断参数的类型
-					for _,p := range tmpCommand.flags.parsers{
-						longFlag := "--"+argName
-						_,isParsed,err := p(longFlag,argValueStr,[]string{},tmpCommand.jflagMaps)
-						if err != nil{
-							jlog.Error(err)
-							return err
-						}else if isParsed{
-							break
-						}
-					}
-					//tmpCommand.jflagMaps[argName] = &FlagMapItem{
-					//	Value:     argValueStr,
-					//	IsDefault: false,
+				if tmpCommand.jflagMaps == nil{
+					tmpCommand.jflagMaps = make(FlagMap)
+					//for _,v2 := range tmpCommand.flags.list{
+					//	tmpCommand.flags.parse([]string{"--"+v2.Long+""},tmpCommand.jflagMaps)
 					//}
-					//jlog.Debug(tmpCommand.jflagMaps)
+				}
+				if argName == v.Long{
+					// 解析flag
+					_,err := tmpCommand.flags.parse([]string{"--"+argName+"="+argValueStr},tmpCommand.jflagMaps)
+					if err != nil{
+						jlog.Error(err)
+						return err
+					}
 					break
 				}
 			}
-			jlog.Debug(tmpCommand.jflagMaps)
+			//jlog.Debug(tmpCommand.jflagMaps)
 			return nil
 		},
 	})
@@ -520,6 +542,7 @@ func (a *App) Run() (err error) {
 			}
 			// 执行
 			ctx := newContext(c.App,tmpCommand,tmpCommand.jflagMaps,nil)
+			//jlog.Info(tmpCommand.jflagMaps)
 			tmpCommand.Run(ctx)
 			return nil
 		},
@@ -528,6 +551,53 @@ func (a *App) Run() (err error) {
 		flags:     Flags{},
 		args:      Args{},
 		commands:  Commands{},
+	})
+	// 添加unset命令
+	a.AddCommand(&Command{
+		Name:      "unset",
+		Aliases:   nil,
+		Help:      "unset long flag",
+		LongHelp:  "",
+		HelpGroup: "",
+		Usage:     "",
+		Flags:     nil,
+		Args: func(a *Args) {
+			a.String("args","long flag name or all")
+		},
+		Run: func(c *Context) error {
+			// 获取当前command
+			tmpCommand := c.App.Commands().Get(c.App.GetCurrentCommand())
+			if tmpCommand == nil{
+				jlog.Errorf("error: command u input not exist\n")
+				return fmt.Errorf("error: command u input not exist\n")
+			}
+			// 获取设置的参数
+			arg := c.Args.String(("args"))
+			// 初始化flag
+			if arg == "all"{ // 初始化每一个flag
+				for _,v := range tmpCommand.flags.list{
+					df := tmpCommand.flags.defaults[v.Long]
+					df(tmpCommand.jflagMaps)
+				}
+				jlog.Debug("unset all flag")
+			}else{ // 初始化指定flag
+				for _,v := range tmpCommand.flags.list{
+					if v.Long == arg{
+						df := tmpCommand.flags.defaults[v.Long]
+						df(tmpCommand.jflagMaps)
+						jlog.Debugf("unset flag %v\n",v.Long)
+						return nil
+					}
+				}
+			}
+			return nil
+		},
+		Completer: nil,
+		parent:    nil,
+		flags:     Flags{},
+		args:      Args{},
+		commands:  Commands{},
+		jflagMaps: nil,
 	})
 
 	// Create the readline instance.
