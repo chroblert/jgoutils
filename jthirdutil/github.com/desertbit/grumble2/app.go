@@ -444,26 +444,10 @@ func (a *App) Run() (err error) {
 				return fmt.Errorf("error: command u input not exist\n")
 			}
 			// 输出当前flag
-			jlog.Infof("\nflag\tvalue\tisDefault\n")
-			jlog.Printf("========================\n")
-			//for _,v := range tmpCommand.flags.list{
-			//	isDefault := true
-			//	if _,ok := tmpCommand.jflagMaps[v.Long];ok{
-			//		isDefault = false
-			//		jlog.Infof("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,isDefault)
-			//	}else{
-			//		jlog.Infof("%v\t%v\t%v\n",v.Long,v.Default,isDefault)
-			//	}
-			//}
+			jlog.Infof("\n%-10v%-30v%-10v%v\n","flag","value","isDefault","description")
+			jlog.Printf("===================================================\n")
 			for _,v := range tmpCommand.flags.list{
-				jlog.Printf("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,tmpCommand.jflagMaps[v.Long].IsDefault)
-				//isDefault := true
-				//if _,ok := tmpCommand.jflagMaps[v.Long];ok{
-				//	isDefault = false
-				//	jlog.Printf("%v\t%v\t%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,isDefault)
-				//}else{
-				//	jlog.Printf("%v\t%v\t%v\n",v.Long,v.Default,isDefault)
-				//}
+				jlog.Printf("%-10v%-30v%-10v%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,tmpCommand.jflagMaps[v.Long].IsDefault,v.Help)
 			}
 			return nil
 		},
