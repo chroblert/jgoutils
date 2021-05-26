@@ -29,6 +29,7 @@ import (
 	"github.com/chroblert/jgoutils/jlog"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/desertbit/closer/v3"
@@ -445,9 +446,18 @@ func (a *App) Run() (err error) {
 			}
 			// 输出当前flag
 			jlog.Infof("\n%-10v%-30v%-10v%v\n","flag","value","isDefault","description")
-			jlog.Printf("===================================================\n")
+			jlog.Printf("=============================================================\n")
 			for _,v := range tmpCommand.flags.list{
-				jlog.Printf("%-10v%-30v%-10v%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,tmpCommand.jflagMaps[v.Long].IsDefault,v.Help)
+				if "slice" == reflect.TypeOf(tmpCommand.jflagMaps[v.Long].Value).Kind().String(){
+					tmpStrSlice := make([]string,0)
+					for _,v2 := range tmpCommand.jflagMaps[v.Long].Value.([]interface{}){
+						tmpStrSlice = append(tmpStrSlice,v2.(string))
+					}
+					jlog.Printf("%-10v%-30v%-10v%v\n",v.Long,"["+strings.Join(tmpStrSlice," ")+"]",tmpCommand.jflagMaps[v.Long].IsDefault,v.Help)
+				}else{
+
+					jlog.Printf("%-10v%-30v%-10v%v\n",v.Long,tmpCommand.jflagMaps[v.Long].Value,tmpCommand.jflagMaps[v.Long].IsDefault,v.Help)
+				}
 			}
 			return nil
 		},
