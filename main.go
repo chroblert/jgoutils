@@ -140,6 +140,7 @@ func main() {
 	})
 	app.AddCommand(&grumble.Command{
 		Name:      "test",
+		FullPath: "testxxx/test",
 		Aliases:   nil,
 		Help:      "test test",
 		LongHelp:  "",

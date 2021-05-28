@@ -73,7 +73,9 @@ type Command struct {
 	commands Commands
 
 	jflagMaps FlagMap // JC0o0l add
+	FullPath string // JC0o0l add
 }
+
 
 func (c *Command) validate() error {
 	if len(c.Name) == 0 {

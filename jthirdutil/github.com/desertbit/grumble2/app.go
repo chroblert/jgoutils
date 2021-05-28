@@ -327,6 +327,7 @@ func (a *App) Run() (err error) {
 	// Add general builtin commands.
 	a.addCommand(&Command{
 		Name: "help",
+		FullPath: "",
 		Help: "use 'help [command]' for command help",
 		Args: func(a *Args) {
 			a.StringList("command", "the name of the command")
@@ -371,6 +372,7 @@ func (a *App) Run() (err error) {
 	// Add shell builtin commands.
 	a.AddCommand(&Command{
 		Name: "exit",
+		FullPath: "",
 		Help: "exit the shell",
 		Run: func(c *Context) error {
 			c.Stop()
@@ -379,6 +381,7 @@ func (a *App) Run() (err error) {
 	})
 	a.AddCommand(&Command{
 		Name: "clear",
+		FullPath: "",
 		Help: "clear the screen",
 		Run: func(c *Context) error {
 			readline.ClearScreen(a.rl)
@@ -388,6 +391,7 @@ func (a *App) Run() (err error) {
 	// 添加use命令
 	a.AddCommand(&Command{
 		Name:      "use",
+		FullPath: "",
 		Aliases:   nil,
 		Help:      "use command",
 		LongHelp:  "",
@@ -406,15 +410,18 @@ func (a *App) Run() (err error) {
 				return nil
 			}
 			// 获取当前command
-			tmpCommand := c.App.Commands().Get(c.Args.String("commandName"))
+			tmpStrSlice := strings.Split(c.Args.String("commandName"),"/")
+			commandName := tmpStrSlice[len(tmpStrSlice)-1]
+			commandCategory := tmpStrSlice[0]
+			tmpCommand := c.App.Commands().Get(commandName)
 			if tmpCommand == nil{
 				jlog.Errorf("error: command u input not exist\n")
 				return fmt.Errorf("error: command u input not exist\n")
 			}
 			// 获取命令
-			c.App.currentCommand = c.Args.String("commandName")
+			c.App.currentCommand = commandName
 			// 设置prompt
-			c.App.currentPrompt = c.Args.String("commandName") + " >> "
+			c.App.currentPrompt = "Z0SecT00ls "+ commandCategory +"("+ strings.Join(tmpStrSlice[1:],"/")+ ") >> "
 			// 初始化jflagMaps
 			if tmpCommand.jflagMaps == nil{
 				tmpCommand.jflagMaps = make(FlagMap)
@@ -430,6 +437,7 @@ func (a *App) Run() (err error) {
 	// 添加show命令
 	a.AddCommand(&Command{
 		Name:      "show",
+		FullPath: "",
 		Aliases:   nil,
 		Help:      "show options",
 		LongHelp:  "",
@@ -471,6 +479,7 @@ func (a *App) Run() (err error) {
 	// 添加set命令
 	a.AddCommand(&Command{
 		Name:      "set",
+		FullPath: "",
 		Aliases:   nil,
 		Help:      "set parameter",
 		LongHelp:  "",
@@ -520,6 +529,7 @@ func (a *App) Run() (err error) {
 	// 添加run命令
 	a.AddCommand(&Command{
 		Name:      "run",
+		FullPath: "",
 		Aliases:   nil,
 		Help:      "run current command",
 		LongHelp:  "",
@@ -549,6 +559,7 @@ func (a *App) Run() (err error) {
 	// 添加unset命令
 	a.AddCommand(&Command{
 		Name:      "unset",
+		FullPath: "",
 		Aliases:   nil,
 		Help:      "unset long flag",
 		LongHelp:  "",

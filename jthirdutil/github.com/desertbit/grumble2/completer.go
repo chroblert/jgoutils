@@ -51,12 +51,14 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 	} else {
 		words = strings.Fields(string(line)) // fallback
 	}
+	//jlog.Errorf("JCTest:%v,%v,%v_\n",words,pos,string(line))
 
 	prefix := ""
 	if len(words) > 0 && pos >= 1 && line[pos-1] != ' ' {
 		prefix = words[len(words)-1]
 		words = words[:len(words)-1]
 	}
+	//jlog.Errorf("JCTest:%v,%v_\n",prefix,words)
 
 	// Simple hack to allow auto completion for help.
 	if len(words) > 0 && words[0] == "help" {
@@ -72,7 +74,8 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 	// Find the last commands list.
 	if len(words) == 0 {
 		cmds = c.commands
-	} else {
+	} else
+	{
 		cmd, rest, err := c.commands.FindCommand(words)
 		if err != nil || cmd == nil {
 			return
@@ -123,6 +126,18 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 			}
 		}
 	} else {
+		// [+]210528: 自动填充命令
+		//jlog.Errorf("JCTest:words:%v_\n",words[len(words)-1])
+		if len(words) > 0 && words[len(words)-1] == "use"{
+			//jlog.Errorf("JCTest:cmds.list:%v\n",c.commands.list)
+			for _,v := range c.commands.list{
+				//jlog.Errorf("%v\n",v.FullPath)
+				if v.FullPath != ""{
+					suggestions = append(suggestions,[]rune(v.FullPath))
+				}
+			}
+		}
+		// end
 		for _, cmd := range cmds.list {
 			suggestions = append(suggestions, []rune(cmd.Name))
 		}
@@ -135,11 +150,20 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 			}
 		}
 	}
-
+	//if prefix == "use"{
+	//	for _,v := range cmds.list{
+	//		jlog.Errorf("%v\n",v.FullPath)
+	//		suggestions = append(suggestions,[]rune(v.FullPath))
+	//	}
+	//}
 	// Append an empty space to each suggestions.
 	for i, s := range suggestions {
 		suggestions[i] = append(s, ' ')
 	}
+	//for _,v := range suggestions{
+	//	jlog.Errorf("JCTest:%v,%v_\n",string(v),prefix)
+	//
+	//}
 
 	return suggestions, len(prefix)
 }
