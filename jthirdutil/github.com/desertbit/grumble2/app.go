@@ -425,6 +425,7 @@ func (a *App) Run() (err error) {
 			c.App.currentCommand = commandName
 			// 设置prompt
 			c.App.currentPrompt = "Z0SecT00ls "+ commandCategory +"("+ strings.Join(tmpStrSlice[1:],"/")+ ") >> "
+			c.App.SetPrompt(c.App.currentPrompt)
 			// 初始化jflagMaps
 			if tmpCommand.jflagMaps == nil{
 				tmpCommand.jflagMaps = make(FlagMap)
