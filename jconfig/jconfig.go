@@ -202,3 +202,11 @@ func setDefaultConfig() {
 		LogFileName:   "logs/app.log",
 	}
 }
+
+func Set(key string,val interface{}){
+	viper.Set(key,val)
+}
+
+func Get(key string){
+	viper.Get(key)
+}
