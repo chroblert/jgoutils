@@ -329,6 +329,7 @@ func (a *App) Run() (err error) {
 		Name: "help",
 		FullPath: "",
 		Help: "use 'help [command]' for command help",
+		HelpGroup: "Core Commands",
 		Args: func(a *Args) {
 			a.StringList("command", "the name of the command")
 		},
@@ -374,6 +375,7 @@ func (a *App) Run() (err error) {
 		Name: "exit",
 		FullPath: "",
 		Help: "exit the shell",
+		HelpGroup: "Core Commands",
 		Run: func(c *Context) error {
 			c.Stop()
 			return nil
@@ -383,6 +385,7 @@ func (a *App) Run() (err error) {
 		Name: "clear",
 		FullPath: "",
 		Help: "clear the screen",
+		HelpGroup: "Core Commands",
 		Run: func(c *Context) error {
 			readline.ClearScreen(a.rl)
 			return nil
@@ -395,7 +398,7 @@ func (a *App) Run() (err error) {
 		Aliases:   nil,
 		Help:      "use command",
 		LongHelp:  "",
-		HelpGroup: "",
+		HelpGroup: "Core Commands",
 		Usage:     "use <command>",
 		//Flags:     nil,
 		Args: func(a *Args) {
@@ -441,7 +444,7 @@ func (a *App) Run() (err error) {
 		Aliases:   nil,
 		Help:      "show options",
 		LongHelp:  "",
-		HelpGroup: "",
+		HelpGroup: "Core Commands",
 		Usage:     "show options",
 		Flags:     nil,
 		Args:      nil,
@@ -483,7 +486,7 @@ func (a *App) Run() (err error) {
 		Aliases:   nil,
 		Help:      "set parameter",
 		LongHelp:  "",
-		HelpGroup: "",
+		HelpGroup: "Core Commands",
 		Usage:     "set flag=flagValue",
 		//Flags:     nil,
 		Args: func(a *Args) {
@@ -533,7 +536,7 @@ func (a *App) Run() (err error) {
 		Aliases:   nil,
 		Help:      "run current command",
 		LongHelp:  "",
-		HelpGroup: "",
+		HelpGroup: "Core Commands",
 		Usage:     "run",
 		Flags:     nil,
 		Args:      nil,
@@ -563,7 +566,7 @@ func (a *App) Run() (err error) {
 		Aliases:   nil,
 		Help:      "unset long flag",
 		LongHelp:  "",
-		HelpGroup: "",
+		HelpGroup: "Core Commands",
 		Usage:     "",
 		Flags:     nil,
 		Args: func(a *Args) {

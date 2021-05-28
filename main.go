@@ -142,10 +142,10 @@ func main() {
 		Name:      "test",
 		FullPath: "testxxx/test",
 		Aliases:   nil,
-		Help:      "test test",
+		Help:      "this is a test command",
 		LongHelp:  "",
-		HelpGroup: "",
-		Usage:     "test",
+		HelpGroup: "testGroup",
+		Usage:     "test arg flag",
 		Flags: func(f *grumble.Flags) {
 			f.String("s","stest","","string test")
 			f.Bool("b","isss",false,"bool test")

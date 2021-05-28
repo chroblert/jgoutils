@@ -67,6 +67,10 @@ func defaultPrintHelp(a *App, shell bool) {
 	// Group the commands by their help group if present.
 	groups := make(map[string]*Commands)
 	for _, c := range a.commands.list {
+		//if c.FullPath != ""{
+		//	continue
+		//}
+		//jlog.Errorf("%v,%v,%v\n",c.FullPath,c.HelpGroup,c.Name)
 		key := c.HelpGroup
 		if len(key) == 0 {
 			key = "Commands:"
@@ -93,11 +97,19 @@ func defaultPrintHelp(a *App, shell bool) {
 
 		var output []string
 		for _, c := range cc.list {
-			name := c.Name
-			for _, a := range c.Aliases {
-				name += ", " + a
+			if c.FullPath == ""{
+				name := c.Name
+				for _, a := range c.Aliases {
+					name += ", " + a
+				}
+				output = append(output, fmt.Sprintf("%s | %v", name, c.Help))
+			}else{
+				name := c.FullPath
+				for _, a := range c.Aliases {
+					name += ", " + a
+				}
+				output = append(output, fmt.Sprintf("%s | %v", name, c.Help))
 			}
-			output = append(output, fmt.Sprintf("%s | %v", name, c.Help))
 		}
 
 		if len(output) > 0 {
