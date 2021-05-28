@@ -101,6 +101,9 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 
 	if len(prefix) > 0 {
 		for _, cmd := range cmds.list {
+			if strings.HasPrefix(cmd.FullPath,prefix){
+				suggestions = append(suggestions, []rune(strings.TrimPrefix(cmd.FullPath, prefix)))
+			}
 			if strings.HasPrefix(cmd.Name, prefix) {
 				suggestions = append(suggestions, []rune(strings.TrimPrefix(cmd.Name, prefix)))
 			}
