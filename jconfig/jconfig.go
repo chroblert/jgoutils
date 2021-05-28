@@ -207,6 +207,6 @@ func Set(key string,val interface{}){
 	viper.Set(key,val)
 }
 
-func Get(key string){
-	viper.Get(key)
+func Get(key string) interface{}{
+	return viper.Get(key)
 }
