@@ -100,10 +100,15 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 	}
 
 	if len(prefix) > 0 {
-		for _, cmd := range cmds.list {
-			if strings.HasPrefix(cmd.FullPath,prefix){
-				suggestions = append(suggestions, []rune(strings.TrimPrefix(cmd.FullPath, prefix)))
+		if len(words) > 0 && words[len(words)-1] == "use" {
+			//jlog.Errorf("JCTest:%v\n",c.commands.list)
+			for _, cmd := range c.commands.list {
+				if strings.HasPrefix(cmd.FullPath,prefix){
+					suggestions = append(suggestions, []rune(strings.TrimPrefix(cmd.FullPath, prefix)))
+				}
 			}
+		}
+		for _, cmd := range cmds.list {
 			if strings.HasPrefix(cmd.Name, prefix) {
 				suggestions = append(suggestions, []rune(strings.TrimPrefix(cmd.Name, prefix)))
 			}
