@@ -25,6 +25,7 @@
 package grumble
 
 import (
+	"github.com/chroblert/jgoutils/jlog"
 	"strings"
 
 	shlex "github.com/desertbit/go-shlex"
@@ -32,11 +33,13 @@ import (
 
 type completer struct {
 	commands *Commands
+	currentCommand string
 }
 
-func newCompleter(commands *Commands) *completer {
+func newCompleter(commands *Commands,s string) *completer {
 	return &completer{
 		commands: commands,
+		currentCommand: s,
 	}
 }
 
@@ -142,6 +145,23 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 				//jlog.Errorf("%v\n",v.FullPath)
 				if v.FullPath != ""{
 					suggestions = append(suggestions,[]rune(v.FullPath))
+				}
+			}
+		}
+		// end
+		// [+]210530: Add set 自动填充参数
+		if len(words) > 0 && words[len(words)-1] == "set"{
+			// 获取当前的命令
+			//jlog.Errorf("JCTest:cmds.list:%v\n",c.commands.list)
+			for _,v := range c.commands.list{
+				//jlog.Errorf("%v:%v\n",v.Name,c.currentCommand)
+				if v.Name == c.currentCommand{
+					jlog.Errorf("%v\n",v.flags.list)
+					for _,v2 := range v.flags.list{
+						suggestions = append(suggestions,[]rune(v2.Long))
+					}
+					//suggestions = append(suggestions,[]rune(v.flags.list))
+					break
 				}
 			}
 		}

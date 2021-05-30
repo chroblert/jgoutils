@@ -435,6 +435,8 @@ func (a *App) Run() (err error) {
 					return err
 				}
 			}
+			// [+]210530: Add 设置自动填充参数
+			c.App.rl.Config.AutoComplete = newCompleter(&c.App.commands,c.App.currentCommand)
 			return nil
 		},
 	})
@@ -616,8 +618,9 @@ func (a *App) Run() (err error) {
 		DisableAutoSaveHistory: true,
 		HistoryFile:            a.config.HistoryFile,
 		HistoryLimit:           a.config.HistoryLimit,
-		AutoComplete:           newCompleter(&a.commands),
+		AutoComplete:           newCompleter(&a.commands,a.currentCommand),
 	})
+
 	if err != nil {
 		return err
 	}
