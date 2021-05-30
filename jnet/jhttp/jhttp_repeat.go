@@ -10,7 +10,8 @@ import (
 
 func (hm *httpMsg) Repeat(counts ...int) map[string][]interface{} {
 	if len(counts) > 1 || (len(counts) == 1 && counts[0] < 1) {
-		jlog.Fatal("请留空或只输入一位代表重放次数的正整数值")
+		jlog.Error("请留空或只输入一位代表重放次数的正整数值")
+		return nil
 	}
 	if !hm.isUseSSL {
 		hm.reqUrl = "http://" + hm.reqHost + hm.reqPath

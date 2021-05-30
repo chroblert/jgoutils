@@ -73,7 +73,7 @@ func (f FlagMap) StringSlice(long string) []string {
 	}
 	// 210520: JC0o0l Modify
 	s := make([]string, 0)
-	fmt.Printf("%T,%v\n", i.Value, i.Value)
+	//fmt.Printf("%T,%v\n", i.Value, i.Value)
 	jlog.Debug(len(i.Value.([]interface{})))
 	if len(i.Value.([]interface{})) == 0 {
 		return s

@@ -23,7 +23,8 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode
 		jlog.Debug("打开字典文件:", k, v)
 		rd, err := os.Open(v)
 		if err != nil {
-			jlog.Fatal(err)
+			jlog.Error(err)
+			return nil
 		}
 		reader := bufio.NewReader(rd)
 		lines := []string{}
@@ -58,12 +59,6 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode
 			}
 		}
 		jasyncobj.Add(strconv.Itoa(i), singleIntruder, printWithFilter, newReqBytes, hm.isUseSSL, hm.getProxy())
-		////jlog.Info(string(reqbytes))
-		//jhttpobj := jhttp.New()
-		//jhttpobj.InitWithBytes(reqbytes)
-		//jlog.Info(jhttpobj.Repeat())
-		//hm.InitWithBytes(newReqBytes)
-		//hm.Repeat()
 	}
 	if jasyncobj.GetTotal() > 0 {
 		jasyncobj.Run()

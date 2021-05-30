@@ -13,7 +13,8 @@ import (
 func (hm *httpMsg) parseFromBurpReqFile(filename string) (reqLine []string, reqHeaders map[string]string, reqData []byte) {
 	tmpBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		jlog.Fatal("读取文件错误")
+		jlog.Error("读取文件错误")
+		return nil, nil, nil
 	}
 	// 添加至reqBytes
 	hm.intruData.reqBytes = append(hm.intruData.reqBytes, tmpBytes...)
