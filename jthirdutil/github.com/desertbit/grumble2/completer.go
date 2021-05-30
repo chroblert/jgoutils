@@ -185,9 +185,9 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 	//	}
 	//}
 	// Append an empty space to each suggestions.
-	for i, s := range suggestions {
-		suggestions[i] = append(s, ' ')
-	}
+	//for i, s := range suggestions {
+	//	suggestions[i] = append(s, ' ')
+	//}
 	//for _,v := range suggestions{
 	//	jlog.Errorf("JCTest:%v,%v_\n",string(v),prefix)
 	//
