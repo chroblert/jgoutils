@@ -1,10 +1,13 @@
 package main
 
 import (
+	"github.com/chroblert/jgoutils/jasync"
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jnet/jtcp"
 	"github.com/chroblert/jgoutils/jnet/jtcp/jcore"
+	"os"
+	"strconv"
 	"strings"
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
@@ -160,10 +163,25 @@ func main() {
 	//	Completer: nil,
 	//})
 	//app.Run()
-
+	jlog.SetLevel(jlog.DEBUG)
 	// jtcp测试
 	jcore.ShowNetworks()
 	jtcpobj := jtcp.New()
-	jtcpobj.SetNetwork(0)
-	jtcpobj.SendSYN("101.132.112.169",22,"test")
+	//jtcpobj.SetNetwork(0)
+	port1,_ := strconv.Atoi(os.Args[1])
+	port2,_ := strconv.Atoi(os.Args[2])
+	jlog.Println(port1)
+	jasyncobj := jasync.New()
+	for i := port1; i < port2; i++ {
+		jasyncobj.Add(strconv.Itoa(i), jtcpobj.SinglePortSYNScan, print,"101.132.112.169",uint16(i),"test")
+		jlog.Println(i)
+	}
+	jasyncobj.Run()
+	jasyncobj.Wait()
+	jasyncobj.Clean()
+	jtcpobj.CloseHandle()
+}
+
+func print(port string, status string, err error){
+	jlog.Errorf("%v : %v\n",port,status)
 }

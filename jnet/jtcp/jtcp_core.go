@@ -8,7 +8,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"log"
 	"net"
 	"time"
 )
@@ -36,12 +35,12 @@ type tcpMsg struct{
 	buffer       gopacket.SerializeBuffer
 	options      gopacket.SerializeOptions
 
-
+	remoteMAC string
 }
 
 func New() *tcpMsg {
 	tmp := jcore.GetNetWorks()
-	return &tcpMsg{
+	tm := &tcpMsg{
 		localNetworkInst: tmp[0],
 		snapshot_len:     1024,
 		promiscuous:      false,
@@ -53,6 +52,20 @@ func New() *tcpMsg {
 			ComputeChecksums: true,
 		},
 	}
+	rt := jroute.NewRouteTable()
+	gwIPStr,err := rt.GetGatewayByDstIP(tm.localNetworkInst.LocalIP)
+	if err != nil{
+		jlog.Error(err)
+		return nil
+	}
+	tm.SetNetwork(0)
+	gwMacStr,err := tm.GetHWAddr(gwIPStr)
+	if err != nil{
+		jlog.Error(err)
+		return nil
+	}
+	tm.remoteMAC = gwMacStr
+	return tm
 }
 
 func (p *tcpMsg)SetNetwork(id int){
@@ -65,34 +78,23 @@ func (p *tcpMsg)SetNetwork(id int){
 	}
 	var err error
 	p.handle, err = pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, p.timeout)
-	if err != nil {log.Fatal(err) }
+	if err != nil {jlog.Fatal(err) }
 }
 
 func (p *tcpMsg)CloseHandle(){
 	p.handle.Close()
 }
 
-func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
-	//var err error
-	rt := jroute.NewRouteTable()
-	gwIP,err := rt.GetGatewayByDstIP(p.localNetworkInst.LocalIP)
-	if err != nil{
-		jlog.Error("获取接口的网关IP失败")
-		return "","",err
-	}
-	gwMacStr,err := p.GetHWAddr(gwIP)
-	if err != nil{
-		jlog.Error(err)
-		return "","",err
-	}
-
+func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
+	handle2, err := pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, p.timeout)
+	if err != nil {jlog.Fatal(err) }
 	// 数据链路层
 	_srcMAC,err := net.ParseMAC(p.localNetworkInst.LocalMAC)
 	if err != nil{
 		jlog.Error(err)
 		return "", "", err
 	}
-	_dstMAC,err := net.ParseMAC(gwMacStr)
+	_dstMAC,err := net.ParseMAC(p.remoteMAC)
 	if err != nil{
 		jlog.Error(err)
 		return "","",err
@@ -138,7 +140,8 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 		return "","",err
 	}
 	outgoingPacket := p.buffer.Bytes()
-	err = p.handle.WritePacketData(outgoingPacket)
+	//err = p.handle.WritePacketData(outgoingPacket)
+	err = handle2.WritePacketData(outgoingPacket)
 	if err != nil{
 		jlog.Error(err)
 		return "","",err
@@ -147,16 +150,20 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
 	for{
 		if time.Since(start) > p.timeout {
-			jlog.Info("timeout getting  reply")
-			return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("timeout")
+			//jlog.Printf("port %v filter\n", remotePort)
+			handle2.Close()
+			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 		}
-		data, _, err := p.handle.ReadPacketData()
+		//data, _, err := p.handle.ReadPacketData()
+		data, _, err := handle2.ReadPacketData()
+		//data,_,err := p.handle.ZeroCopyReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {
 			continue
 		} else if err != nil {
-			jlog.Error("error reading packet: %v", err)
+			//jlog.Error("error reading packet: %v", err)
 			continue
 		}
+		//packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Default)
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 		if jnet := packet.NetworkLayer(); jnet == nil {
 		} else if jnet.NetworkFlow().String() != ipFlow.String() {
@@ -166,21 +173,20 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 		} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
 			// We panic here because this is guaranteed to never
 			// happen.
-			jlog.Error("tcp layer is not tcp layer :-/")
+			//jlog.Error("tcp layer is not tcp layer :-/")
 			return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
 		} else if tcp.DstPort != layers.TCPPort(_srcPort) {
 			// log.Printf("dst port %v does not match", tcp.DstPort)
 		} else if tcp.RST {
-			jlog.Printf("  port %v closed", tcp.SrcPort)
+			//jlog.Printf("port %v closed\n", tcp.SrcPort)
 			return tcp.SrcPort.String(),"closed",nil
 		} else if tcp.SYN && tcp.ACK {
-			jlog.Printf("  port %v open", tcp.SrcPort)
+			//jlog.Printf("port %v open\n", tcp.SrcPort)
 			return tcp.SrcPort.String(),"open",nil
 		} else {
 			// log.Printf("ignoring useless packet")
 		}
 	}
-	return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("timeout")
 
 }
 

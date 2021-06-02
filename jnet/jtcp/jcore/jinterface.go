@@ -152,6 +152,6 @@ func GetFreePort(ipStr string) (uint16, error) {
 		return 0, err
 	}
 	defer l.Close()
-	jlog.Debug(uint16(l.Addr().(*net.TCPAddr).Port))
+	//jlog.Debug(uint16(l.Addr().(*net.TCPAddr).Port))
 	return uint16(l.Addr().(*net.TCPAddr).Port), nil
 }
