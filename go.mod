@@ -9,6 +9,7 @@ require (
 	github.com/desertbit/readline v1.5.1
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
 	github.com/spf13/viper v1.7.1

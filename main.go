@@ -1,11 +1,9 @@
-// +build ignore
-
 package main
 
 import (
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
-	grumble "github.com/chroblert/jgoutils/jthirdutil/github.com/desertbit/grumble2"
+	"github.com/chroblert/jgoutils/jnet/jtcp"
 	"strings"
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
@@ -120,45 +118,48 @@ func main() {
 	//jhttpobj.Repeat()
 
 	// grumble2测试
-	var app = grumble.New(&grumble.Config{
-		Name:                  "app",
-		Description:           "app test",
-		Flags:                 nil,
-		HistoryFile:           "",
-		HistoryLimit:          0,
-		NoColor:               false,
-		Prompt:                "app >> ",
-		PromptColor:           nil,
-		MultiPrompt:           "",
-		MultiPromptColor:      nil,
-		ASCIILogoColor:        nil,
-		ErrorColor:            nil,
-		HelpHeadlineUnderline: false,
-		HelpSubCommands:       false,
-		HelpHeadlineColor:     nil,
-		CurrentCommand:        "app",
-	})
-	app.AddCommand(&grumble.Command{
-		Name:      "test",
-		FullPath: "testxxx/test",
-		Aliases:   nil,
-		Help:      "this is a test command",
-		LongHelp:  "",
-		HelpGroup: "testGroup",
-		Usage:     "test arg flag",
-		Flags: func(f *grumble.Flags) {
-			f.String("s","stest","","string test")
-			f.Bool("b","isss",false,"bool test")
-			f.StringSlice("c","slice",[]string{},"string slice test")
-		},
-		Args:      nil,
-		Run: func(c *grumble.Context) error {
-			jlog.Println(c.Flags.String("stest"))
-			jlog.Println(c.Flags.Bool("isss"))
-			jlog.Println(c.Flags.StringSlice("slice"))
-			return nil
-		},
-		Completer: nil,
-	})
-	app.Run()
+	//var app = grumble.New(&grumble.Config{
+	//	Name:                  "app",
+	//	Description:           "app test",
+	//	Flags:                 nil,
+	//	HistoryFile:           "",
+	//	HistoryLimit:          0,
+	//	NoColor:               false,
+	//	Prompt:                "app >> ",
+	//	PromptColor:           nil,
+	//	MultiPrompt:           "",
+	//	MultiPromptColor:      nil,
+	//	ASCIILogoColor:        nil,
+	//	ErrorColor:            nil,
+	//	HelpHeadlineUnderline: false,
+	//	HelpSubCommands:       false,
+	//	HelpHeadlineColor:     nil,
+	//	CurrentCommand:        "app",
+	//})
+	//app.AddCommand(&grumble.Command{
+	//	Name:      "test",
+	//	FullPath: "testxxx/test",
+	//	Aliases:   nil,
+	//	Help:      "this is a test command",
+	//	LongHelp:  "",
+	//	HelpGroup: "testGroup",
+	//	Usage:     "test arg flag",
+	//	Flags: func(f *grumble.Flags) {
+	//		f.String("s","stest","","string test")
+	//		f.Bool("b","isss",false,"bool test")
+	//		f.StringSlice("c","slice",[]string{},"string slice test")
+	//	},
+	//	Args:      nil,
+	//	Run: func(c *grumble.Context) error {
+	//		jlog.Println(c.Flags.String("stest"))
+	//		jlog.Println(c.Flags.Bool("isss"))
+	//		jlog.Println(c.Flags.StringSlice("slice"))
+	//		return nil
+	//	},
+	//	Completer: nil,
+	//})
+	//app.Run()
+
+	// jtcp测试
+	jtcp.ShowNetworks()
 }
