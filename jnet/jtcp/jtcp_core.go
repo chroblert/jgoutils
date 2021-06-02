@@ -3,13 +3,13 @@ package jtcp
 import (
 	"fmt"
 	"github.com/chroblert/jgoutils/jlog"
+	"github.com/chroblert/jgoutils/jnet/jtcp/jcore"
+	"github.com/chroblert/jgoutils/jnet/jtcp/jroute"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/google/gopacket/routing"
 	"log"
 	"net"
-	"runtime"
 	"time"
 )
 
@@ -27,7 +27,7 @@ type remoteNetwork struct{
 }
 
 type tcpMsg struct{
-	localNetworkInst *localNetwork
+	localNetworkInst *jcore.LocalNetwork
 	snapshot_len int32
 	promiscuous bool
 	timeout time.Duration
@@ -40,7 +40,7 @@ type tcpMsg struct{
 }
 
 func New() *tcpMsg {
-	tmp := GetNetWorks()
+	tmp := jcore.GetNetWorks()
 	return &tcpMsg{
 		localNetworkInst: tmp[0],
 		snapshot_len:     1024,
@@ -56,7 +56,7 @@ func New() *tcpMsg {
 }
 
 func (p *tcpMsg)SetNetwork(id int){
-	tmp := GetNetWorks()
+	tmp := jcore.GetNetWorks()
 	if len(tmp) > id{
 		p.localNetworkInst = tmp[id]
 	}
@@ -64,7 +64,7 @@ func (p *tcpMsg)SetNetwork(id int){
 		p.handle.Close()
 	}
 	var err error
-	p.handle, err = pcap.OpenLive(p.localNetworkInst.localDevice, p.snapshot_len, p.promiscuous, p.timeout)
+	p.handle, err = pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, p.timeout)
 	if err != nil {log.Fatal(err) }
 }
 
@@ -74,28 +74,28 @@ func (p *tcpMsg)CloseHandle(){
 
 func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
 	//var err error
-	systype := runtime.GOOS
-	if systype == "linux"{
-		router,err := routing.New()
-		if err != nil{
-			jlog.Fatal(err)
-		}
-		iface, gw, src, err := router.Route(net.ParseIP(remoteIP))
-		if err != nil {
-			jlog.Fatal(err)
-		}
-		jlog.Println(iface,gw,src)
+	rt := jroute.NewRouteTable()
+	gwIP,err := rt.GetGatewayByDstIP(p.localNetworkInst.LocalIP)
+	if err != nil{
+		jlog.Error("获取接口的网关IP失败")
+		return "","",err
 	}
-
+	gwMacStr,err := p.GetHWAddr(gwIP)
+	if err != nil{
+		jlog.Error(err)
+		return "","",err
+	}
 
 	// 数据链路层
-	_srcMAC,err := net.ParseMAC(p.localNetworkInst.localMAC)
+	_srcMAC,err := net.ParseMAC(p.localNetworkInst.LocalMAC)
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return "", "", err
 	}
-	_dstMAC,err := net.ParseMAC("48:3f:e9:84:fc:c6")
+	_dstMAC,err := net.ParseMAC(gwMacStr)
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return "","",err
 	}
 	ethernetLayer := &layers.Ethernet{
 		SrcMAC: _srcMAC,
@@ -104,14 +104,14 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 	}
 	// 网络层
 	ipLayer := &layers.IPv4{
-		SrcIP: net.ParseIP(p.localNetworkInst.localIP),
+		SrcIP: net.ParseIP(p.localNetworkInst.LocalIP),
 		DstIP: net.ParseIP(remoteIP),
 		Version: 4,
 		TTL:64,
 		Protocol: layers.IPProtocolTCP,
 	}
 	// 传输层
-	_srcPort,_ := GetFreePort(p.localNetworkInst.localIP)
+	_srcPort,_ := jcore.GetFreePort(p.localNetworkInst.LocalIP)
 	tcpLayer := &layers.TCP{
 		SrcPort: layers.TCPPort(_srcPort),
 		DstPort: layers.TCPPort(remotePort),
@@ -134,15 +134,17 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 		gopacket.Payload([]byte(payload)),
 	)
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return "","",err
 	}
 	outgoingPacket := p.buffer.Bytes()
 	err = p.handle.WritePacketData(outgoingPacket)
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return "","",err
 	}
 	start := time.Now()
-	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.localIP))
+	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
 	for{
 		if time.Since(start) > p.timeout {
 			jlog.Info("timeout getting  reply")
@@ -182,21 +184,17 @@ func (p *tcpMsg)SendSYN(remoteIP string,remotePort uint16,payload string) (port 
 
 }
 
-func (p *tcpMsg)GetHWAddr(dstIPStr string){
-	//var err error
-	//p.handle, err = pcap.OpenLive(p.localNetworkInst.localDevice, p.snapshot_len, p.promiscuous, p.timeout)
-	//if err != nil {log.Fatal(err) }
-	//defer p.handle.Close()
+func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 	start := time.Now()
 	// 数据链路层
 	// Prepare the layers to send for an ARP request.
-	_srcMAC,_ := net.ParseMAC(p.localNetworkInst.localMAC)
+	_srcMAC,_ := net.ParseMAC(p.localNetworkInst.LocalMAC)
 	eth := &layers.Ethernet{
 		SrcMAC:       _srcMAC,
 		DstMAC:       net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
 		EthernetType: layers.EthernetTypeARP,
 	}
-	_srcIP := net.ParseIP(p.localNetworkInst.localIP)
+	_srcIP := net.ParseIP(p.localNetworkInst.LocalIP)
 	_dstIP := net.ParseIP(dstIPStr)
 	arp := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
@@ -217,24 +215,26 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string){
 
 	// Wait 3 seconds for an ARP reply.
 	for {
-		if time.Since(start) > time.Second*3 {
+		if time.Since(start) > time.Second*4 {
 			jlog.Error("timeout getting ARP reply")
-			return
+			return "",fmt.Errorf("timeout getting ARP reply")
 		}
 		data, _, err := p.handle.ReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {
 			continue
 		} else if err != nil {
-			return
+			continue
 		}
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 		if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
 			arp := arpLayer.(*layers.ARP)
-			jlog.Println(net.IP(arp.SourceProtAddress))
-			jlog.Println(net.ParseIP(dstIPStr))
+			//jlog.Println(net.IP(arp.SourceProtAddress))
+			//jlog.Println(net.ParseIP(dstIPStr))
 			if net.IP(arp.SourceProtAddress).Equal(net.ParseIP(dstIPStr)) {
 				//return net.HardwareAddr(arp.SourceHwAddress), nil
 				jlog.Debug(net.HardwareAddr(arp.SourceHwAddress))
+				GWMACStr = net.HardwareAddr(arp.SourceHwAddress).String()
+				return GWMACStr,nil
 			}
 		}
 	}

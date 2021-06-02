@@ -4,6 +4,7 @@ import (
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jnet/jtcp"
+	"github.com/chroblert/jgoutils/jnet/jtcp/jcore"
 	"strings"
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
@@ -161,5 +162,8 @@ func main() {
 	//app.Run()
 
 	// jtcp测试
-	jtcp.ShowNetworks()
+	jcore.ShowNetworks()
+	jtcpobj := jtcp.New()
+	jtcpobj.SetNetwork(0)
+	jtcpobj.SendSYN("101.132.112.169",22,"test")
 }
