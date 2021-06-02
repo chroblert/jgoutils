@@ -62,7 +62,19 @@ func New() *tcpMsg {
 	gwMacStr,err := tm.GetHWAddr(gwIPStr)
 	if err != nil{
 		jlog.Error(err)
-		return nil
+		for i := 1;i<len(tmp);i++{
+			tm.SetNetwork(i)
+			gwIPStr,err := rt.GetGatewayByDstIP(tm.localNetworkInst.LocalIP)
+			if err != nil{
+				jlog.Error(err)
+				return nil
+			}
+			gwMacStr,err := tm.GetHWAddr(gwIPStr)
+			if err == nil{
+				tm.remoteMAC = gwMacStr
+				break
+			}
+		}
 	}
 	tm.remoteMAC = gwMacStr
 	return tm
@@ -113,7 +125,16 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 		Protocol: layers.IPProtocolTCP,
 	}
 	// 传输层
-	_srcPort,_ := jcore.GetFreePort(p.localNetworkInst.LocalIP)
+	// 获取一个空闲的端口
+	_srcPort,err := jcore.GetFreePort(p.localNetworkInst.LocalIP)
+	if err != nil{
+		for {
+			_srcPort,err = jcore.GetFreePort(p.localNetworkInst.LocalIP)
+			if err == nil{
+				break
+			}
+		}
+	}
 	tcpLayer := &layers.TCP{
 		SrcPort: layers.TCPPort(_srcPort),
 		DstPort: layers.TCPPort(remotePort),
@@ -128,8 +149,13 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	}
 	tcpLayer.SetNetworkLayerForChecksum(ipLayer)
 
+	buffer := gopacket.NewSerializeBuffer()
+	options := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
 	// And create the packet with the layers
-	err = gopacket.SerializeLayers(p.buffer, p.options,
+	err = gopacket.SerializeLayers(buffer, options,
 		ethernetLayer,
 		ipLayer,
 		tcpLayer,
@@ -139,7 +165,7 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 		jlog.Error(err)
 		return "","",err
 	}
-	outgoingPacket := p.buffer.Bytes()
+	outgoingPacket := buffer.Bytes()
 	//err = p.handle.WritePacketData(outgoingPacket)
 	err = handle2.WritePacketData(outgoingPacket)
 	if err != nil{

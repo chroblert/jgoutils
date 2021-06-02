@@ -73,7 +73,7 @@ func main() {
 	//asyncobj.Clean()
 
 	// ==== jlog测试
-	jlog.SetLevel(jlog.INFO)
+	jlog.SetLevel(jlog.DEBUG)
 	//jlog.Debug("debug")
 	//jlog.Info("info")
 	//jlog.Warn("warn")
@@ -174,7 +174,7 @@ func main() {
 	jasyncobj := jasync.New()
 	for i := port1; i < port2; i++ {
 		jasyncobj.Add(strconv.Itoa(i), jtcpobj.SinglePortSYNScan, print,"101.132.112.169",uint16(i),"test")
-		jlog.Println(i)
+		//jlog.Println(i)
 	}
 	jasyncobj.Run()
 	jasyncobj.Wait()
@@ -183,5 +183,7 @@ func main() {
 }
 
 func print(port string, status string, err error){
-	jlog.Errorf("%v : %v\n",port,status)
+	if status == "open"{
+		jlog.Infof("%v : %v\n",port,status)
+	}
 }
