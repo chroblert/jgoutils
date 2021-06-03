@@ -184,6 +184,9 @@ func main() {
 
 func print(port string, status string, err error){
 	if status == "open"{
-		jlog.Infof("%v : %v\n",port,status)
+		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
+	}
+	if port == "56263"{
+		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
 	}
 }

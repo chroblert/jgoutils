@@ -9,6 +9,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"net"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -36,6 +38,12 @@ type tcpMsg struct{
 	options      gopacket.SerializeOptions
 
 	remoteMAC string
+	//portScanRes map[string]string // localIP:localPort-remoteIP:remotePort,status
+	portScanRes *sync.Map // localIP:localPort-remoteIP:remotePort,status
+	mu *sync.RWMutex
+	//portScanTasks map[string]
+	portScanTasks *sync.Map
+
 }
 
 func New() *tcpMsg {
@@ -51,6 +59,11 @@ func New() *tcpMsg {
 			FixLengths:       true,
 			ComputeChecksums: true,
 		},
+		//portScanRes: make(map[string]string),
+		portScanRes: &sync.Map{},
+		mu: new(sync.RWMutex),
+		//portScanTasks: make(map[string]int),
+		portScanTasks: &sync.Map{},
 	}
 	rt := jroute.NewRouteTable()
 	gwIPStr,err := rt.GetGatewayByDstIP(tm.localNetworkInst.LocalIP)
@@ -97,8 +110,23 @@ func (p *tcpMsg)CloseHandle(){
 	p.handle.Close()
 }
 
+//func (p *tcpMsg)SetPortScanRes(key string,val string){
+//	if val != "open" && val != "closed"{
+//		p.mu.RLock()
+//		p.portScanRes[key]="filter"
+//		p.mu.RUnlock()
+//	}else{
+//		p.mu.RLock()
+//		p.portScanRes[key]="filter"
+//		p.mu.RUnlock()
+//	}
+//}
+
 func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
+
 	handle2, err := pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, p.timeout)
+	defer handle2.Close()
+
 	if err != nil {jlog.Fatal(err) }
 	// 数据链路层
 	_srcMAC,err := net.ParseMAC(p.localNetworkInst.LocalMAC)
@@ -172,24 +200,58 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 		jlog.Error(err)
 		return "","",err
 	}
+	key := p.localNetworkInst.LocalIP+":"+strconv.Itoa(int(_srcPort))+"-"+remoteIP+":"+strconv.Itoa(int(remotePort))
+	//p.portScanTasks[key]=1
+	p.portScanTasks.Store(key,1)
 	start := time.Now()
 	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
+	//packetSource := gopacket.NewPacketSource(handle2,handle2.LinkType())
+	//for packet := range packetSource.Packets(){
+	//	if time.Since(start) > p.timeout {
+	//		//jlog.Printf("port %v filter\n", remotePort)
+	//		return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
+	//	}
+	//	if jnet := packet.NetworkLayer(); jnet == nil {
+	//	} else if jnet.NetworkFlow().String() != ipFlow.String() {
+	//		// log.Printf("packet does not match our ip src/dst")
+	//	} else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil {
+	//		// log.Printf("packet has not tcp layer")
+	//	} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
+	//		// We panic here because this is guaranteed to never
+	//		// happen.
+	//		//jlog.Error("tcp layer is not tcp layer :-/")
+	//		return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
+	//	} else if tcp.DstPort != layers.TCPPort(_srcPort) {
+	//		// log.Printf("dst port %v does not match", tcp.DstPort)
+	//	} else if tcp.RST {
+	//		//jlog.Printf("port %v closed\n", tcp.SrcPort)
+	//		return tcp.SrcPort.String(),"closed",nil
+	//	} else if tcp.SYN && tcp.ACK {
+	//		//jlog.Printf("port %v open\n", tcp.SrcPort)
+	//		return tcp.SrcPort.String(),"open",nil
+	//	} else {
+	//		jlog.Printf("ignoring useless packet")
+	//	}
+	//}
+	//return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
+
 	for{
 		if time.Since(start) > p.timeout {
 			//jlog.Printf("port %v filter\n", remotePort)
-			handle2.Close()
 			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 		}
-		//data, _, err := p.handle.ReadPacketData()
+		if status,ok := p.portScanRes.LoadAndDelete(key); ok{
+			//if status,ok := p.portScanRes[key]; ok{
+			p.portScanTasks.Delete(key)
+			return fmt.Sprintf("%v",remotePort),status.(string),nil
+		}
 		data, _, err := handle2.ReadPacketData()
-		//data,_,err := p.handle.ZeroCopyReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {
 			continue
 		} else if err != nil {
 			//jlog.Error("error reading packet: %v", err)
 			continue
 		}
-		//packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Default)
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 		if jnet := packet.NetworkLayer(); jnet == nil {
 		} else if jnet.NetworkFlow().String() != ipFlow.String() {
@@ -201,17 +263,35 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 			// happen.
 			//jlog.Error("tcp layer is not tcp layer :-/")
 			return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
-		} else if tcp.DstPort != layers.TCPPort(_srcPort) {
-			// log.Printf("dst port %v does not match", tcp.DstPort)
-		} else if tcp.RST {
+		//} else if _,ok := p.portScanTasks[jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()]; !ok{
+		} else if _,ok := p.portScanTasks.LoadAndDelete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()); !ok{
+
+		}else  if tcp.RST {
 			//jlog.Printf("port %v closed\n", tcp.SrcPort)
-			return tcp.SrcPort.String(),"closed",nil
+			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String(),"closed")
+			//return tcp.SrcPort.String(),"closed",nil
+			//if tcp.DstPort == layers.TCPPort(_srcPort){
+			//	return tcp.SrcPort.String(),"open",nil
+			//}
 		} else if tcp.SYN && tcp.ACK {
-			//jlog.Printf("port %v open\n", tcp.SrcPort)
-			return tcp.SrcPort.String(),"open",nil
-		} else {
-			// log.Printf("ignoring useless packet")
+			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String(),"open")
+			jlog.Infof("port %v open\n", tcp.SrcPort)
+			//return tcp.SrcPort.String(),"open",nil
+			jlog.Fatal()
+		}else{
+			jlog.Fatal("xxxx")
 		}
+		//tcp.DstPort != layers.TCPPort(_srcPort) {
+		//	// log.Printf("dst port %v does not match", tcp.DstPort)
+		//} else if tcp.RST {
+		//	//jlog.Printf("port %v closed\n", tcp.SrcPort)
+		//	return tcp.SrcPort.String(),"closed",nil
+		//} else if tcp.SYN && tcp.ACK {
+		//	jlog.Printf("port %v open\n", tcp.SrcPort)
+		//	return tcp.SrcPort.String(),"open",nil
+		//} else if _,ok := p.portScanTasks[jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()]; !ok {
+		//	jlog.Printf("ignoring useless packet")
+		//}
 	}
 
 }

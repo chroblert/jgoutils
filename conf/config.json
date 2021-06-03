@@ -10,7 +10,7 @@
     "timeout": 60
   },
   "asyncConfig": {
-    "taskMaxLimit": 10000
+    "taskMaxLimit": 20000
   },
   "logConfig": {
     "lv": 1,
@@ -18,8 +18,8 @@
     "maxStoreDays": 5,
     "maxSize": 10240000,
     "logCount": 5,
-    "bufferSize": 1024,
-    "flushInterval":5,
+    "bufferSize": 2048,
+    "flushInterval": 10,
     "logFileName": "logs/app.log"
   }
 }
