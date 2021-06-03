@@ -10,6 +10,7 @@ import (
 	"github.com/google/gopacket/pcap"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -124,7 +125,7 @@ func (p *tcpMsg)CloseHandle(){
 
 func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
 
-	handle2, err := pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, p.timeout)
+	handle2, err := pcap.OpenLive(p.localNetworkInst.LocalDevice, p.snapshot_len, p.promiscuous, pcap.BlockForever)
 	defer handle2.Close()
 
 	if err != nil {jlog.Fatal(err) }
@@ -202,6 +203,9 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	}
 	key := p.localNetworkInst.LocalIP+":"+strconv.Itoa(int(_srcPort))+"-"+remoteIP+":"+strconv.Itoa(int(remotePort))
 	//p.portScanTasks[key]=1
+	//jlog.Println("key:",key)
+	//jlog.Println("portscantasks:",p.portScanTasks)
+
 	p.portScanTasks.Store(key,1)
 	start := time.Now()
 	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
@@ -235,15 +239,31 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	//}
 	//return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 
+	//jlog.Println("portscantasks:",p.portScanTasks)
+	//jlog.Println(p.portScanTasks.Load(key))
+	//p.portScanTasks.Range(func(key, value interface{}) bool {
+	//	jlog.Println("key:",key,"value:",value)
+	//	return true
+	//})
 	for{
-		if time.Since(start) > p.timeout {
-			//jlog.Printf("port %v filter\n", remotePort)
-			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
-		}
 		if status,ok := p.portScanRes.LoadAndDelete(key); ok{
 			//if status,ok := p.portScanRes[key]; ok{
+			//jlog.Info("portscanres: ",p.portScanRes)
 			p.portScanTasks.Delete(key)
+			//p.portScanRes.Range(func(key, value interface{}) bool {
+			//	jlog.Info("key:",key," ,value:",value)
+			//	return true
+			//})
 			return fmt.Sprintf("%v",remotePort),status.(string),nil
+		}
+		if time.Since(start) > p.timeout {
+			//jlog.Printf("port %v filter\n", remotePort)
+			//jlog.Info("portscanres:",p.portScanRes)
+			//p.portScanRes.Range(func(key, value interface{}) bool {
+			//	jlog.Info("key:",key," ,value:",value)
+			//	return true
+			//})
+			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 		}
 		data, _, err := handle2.ReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {
@@ -259,25 +279,30 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 		} else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil {
 			// log.Printf("packet has not tcp layer")
 		} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
-			// We panic here because this is guaranteed to never
-			// happen.
 			//jlog.Error("tcp layer is not tcp layer :-/")
 			return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
 		//} else if _,ok := p.portScanTasks[jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()]; !ok{
-		} else if _,ok := p.portScanTasks.LoadAndDelete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()); !ok{
-
+		} else if _,ok := p.portScanTasks.Load(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] ); !ok{
+			//jlog.Info("test")
+			//jlog.Info(jnet.NetworkFlow().String())
+			//jlog.Info(strings.Split(tcp.SrcPort.String(),"(")[0])
+			//jlog.Info(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
+			//jlog.Info(p.portScanTasks.Load(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0]))
 		}else  if tcp.RST {
 			//jlog.Printf("port %v closed\n", tcp.SrcPort)
-			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String(),"closed")
+			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"closed")
 			//return tcp.SrcPort.String(),"closed",nil
 			//if tcp.DstPort == layers.TCPPort(_srcPort){
 			//	return tcp.SrcPort.String(),"open",nil
 			//}
+			//jlog.Info("closed")
+			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		} else if tcp.SYN && tcp.ACK {
-			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String(),"open")
-			jlog.Infof("port %v open\n", tcp.SrcPort)
+			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
+			//jlog.Infof("port %v open\n", strings.Split(tcp.SrcPort.String(),"(")[0])
 			//return tcp.SrcPort.String(),"open",nil
-			jlog.Fatal()
+			//jlog.Fatal()
+			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}else{
 			jlog.Fatal("xxxx")
 		}
