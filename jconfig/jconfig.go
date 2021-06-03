@@ -57,14 +57,14 @@ type config struct {
 }
 
 func (p *globalConfig) AddGlobalGoroutinCount() {
-	p.mu.RLock()
+	p.mu.Lock()
 	p.realtimeGoroutinCount++
-	p.mu.RUnlock()
+	p.mu.Unlock()
 }
 func (p *globalConfig) SubGlobalGoroutinCount() {
-	p.mu.RLock()
+	p.mu.Lock()
 	p.realtimeGoroutinCount--
-	p.mu.RUnlock()
+	p.mu.Unlock()
 }
 
 func (p *globalConfig) Wait() {

@@ -8,6 +8,7 @@ import (
 	"github.com/chroblert/jgoutils/jnet/jtcp"
 	"github.com/chroblert/jgoutils/jnet/jtcp/jcore"
 	"strconv"
+	"sync"
 )
 
 func portScan(ipStr string,portStr string,rate int) error{
@@ -24,21 +25,18 @@ func portScan(ipStr string,portStr string,rate int) error{
 	jtcpobj := jtcp.New()
 	jcore.ShowNetworks()
 	jasyncobj := jasync.New()
-	//var wg = new(sync.WaitGroup)
+	var wg = new(sync.WaitGroup)
 	for _,v := range t{
 		//jlog.Info(v)
 		for _,v2 := range p{
-			//wg.Add(1)
-			//jlog.Info(v2)
-			//port,status,err := jtcpobj.SinglePortSYNScan(v,uint16(v2),"xx")
-			//jlog.Info(port,":",status," ",err)
-			//go func(v string,v2 int){
+			wg.Add(1)
+			go func(v string,v2 int){
 				jasyncobj.Add(v+":"+strconv.Itoa(v2),jtcpobj.SinglePortSYNScan,print,v,uint16(v2),"test")
-				//wg.Done()
-			//}(v,v2)
+				wg.Done()
+			}(v,v2)
 		}
 	}
-	//wg.Wait()
+	wg.Wait()
 	jasyncobj.Run()
 	jasyncobj.Wait()
 	jasyncobj.Clean()
