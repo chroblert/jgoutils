@@ -6,6 +6,7 @@ import (
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jnet/jparser"
 	"github.com/chroblert/jgoutils/jnet/jtcp"
+	"github.com/chroblert/jgoutils/jnet/jtcp/jcore"
 	"strconv"
 )
 
@@ -21,6 +22,7 @@ func portScan(ipStr string,portStr string,rate int) error{
 		return fmt.Errorf("nil port")
 	}
 	jtcpobj := jtcp.New()
+	jcore.ShowNetworks()
 	jasyncobj := jasync.New()
 	//var wg = new(sync.WaitGroup)
 	for _,v := range t{
@@ -40,6 +42,8 @@ func portScan(ipStr string,portStr string,rate int) error{
 	jasyncobj.Run()
 	jasyncobj.Wait()
 	jasyncobj.Clean()
+	jtcpobj.Test()
+	//time.Sleep(3*time.Second)
 	jtcpobj.CloseHandle()
 	//time.Sleep(3*time.Second)
 	return nil

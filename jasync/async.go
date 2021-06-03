@@ -70,7 +70,7 @@ func (a *Async) wait() {
 		if a.taskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit {
 			break
 		}
-		jlog.Debug("达到同时最大任务量限制：taskMaxLimit:", jconfig.Conf.AsyncConfig.TaskMaxLimit, ",currentCount:", a.taskCount)
+		jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,currentCount: %v\r",  jconfig.Conf.AsyncConfig.TaskMaxLimit,a.taskCount)
 	}
 	a.mu.RUnlock()
 }

@@ -4,7 +4,6 @@ import (
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
 	"os"
-	"strings"
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
 )
@@ -15,10 +14,10 @@ const (
 	SocksProxy = "socks5://192.168.30.109:10808"
 )
 
-func Print(statusCode int, headers map[string][]string, body []byte, err error) {
-	//fmt.Println(strings.TrimSpace(string(body)))
-	jlog.Info("状态码：", statusCode, strings.TrimSpace(string(body)))
-}
+//func Print(statusCode int, headers map[string][]string, body []byte, err error) {
+//	//fmt.Println(strings.TrimSpace(string(body)))
+//	jlog.Info("状态码：", statusCode, strings.TrimSpace(string(body)))
+//}
 
 //func print(test int){
 //	fmt.Println(test)
@@ -186,6 +185,9 @@ func print(port string, status string, err error){
 		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
 	}
 	if port == "56263"{
+		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
+	}
+	if port == "22"{
 		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
 	}
 }
