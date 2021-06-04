@@ -24,6 +24,7 @@ func portScan(ipStr string,portStr string,rate int) error{
 	}
 	jtcpobj := jtcp.New()
 	jcore.ShowNetworks()
+	jtcpobj.SetNetwork(2)
 	jasyncobj := jasync.New()
 	var wg = new(sync.WaitGroup)
 	for _,v := range t{
@@ -40,7 +41,7 @@ func portScan(ipStr string,portStr string,rate int) error{
 	jasyncobj.Run()
 	jasyncobj.Wait()
 	jasyncobj.Clean()
-	jtcpobj.Test()
+	//jtcpobj.Test()
 	//time.Sleep(3*time.Second)
 	jtcpobj.CloseHandle()
 	//time.Sleep(3*time.Second)

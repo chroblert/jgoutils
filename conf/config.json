@@ -10,7 +10,7 @@
     "timeout": 60
   },
   "asyncConfig": {
-    "taskMaxLimit": 5000
+    "taskMaxLimit": 10000
   },
   "logConfig": {
     "lv": 1,
