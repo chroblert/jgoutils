@@ -321,12 +321,14 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 			return fmt.Sprintf("%v",remotePort),status.(string),nil
 		}
 		if time.Since(start) > p.timeout {
-			//jlog.Error("start:",start.String(),remotePort,"超时",time.Since(start).String())
+			//jlog.Warn(remotePort,"start:",start.String(),"超时",time.Since(start).String(),"p.timeout:",p.timeout)
 			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 		}
+		//jlog.Error(remotePort,"start:",start.String(),"准备",time.Since(start).String(),"p.timeout:",p.timeout)
 		data, _, err := p.handle.ReadPacketData()
+		//jlog.Error(remotePort,"start:",start.String(),"获取到",time.Since(start).String(),"p.timeout:",p.timeout)
 		if err == pcap.NextErrorTimeoutExpired {
-			jlog.Error("readPacketData:1err:",err)
+			jlog.Error("readPacketData:1err:",remotePort,err)
 			continue
 		} else if err != nil {
 			jlog.Error("readPacketData:err:",err)

@@ -44,7 +44,7 @@ func (hm *httpMsg) Repeat(counts ...int) map[string][]interface{} {
 	} else {
 		return map[string][]interface{}{"0": []interface{}{0, nil, nil, fmt.Errorf("only GET or POST yet")}}
 	}
-	jasyncobj.Run()
+	jasyncobj.Run(-1)
 	jasyncobj.Wait()
 	result := jasyncobj.GetTasksResult()
 	jasyncobj.Clean()

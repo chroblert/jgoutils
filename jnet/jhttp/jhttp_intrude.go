@@ -61,7 +61,7 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode
 		jasyncobj.Add(strconv.Itoa(i), singleIntruder, printWithFilter, newReqBytes, hm.isUseSSL, hm.getProxy())
 	}
 	if jasyncobj.GetTotal() > 0 {
-		jasyncobj.Run()
+		jasyncobj.Run(-1)
 		jasyncobj.Wait()
 		if isPrintAllStaus {
 			jasyncobj.GetStatus("", false)

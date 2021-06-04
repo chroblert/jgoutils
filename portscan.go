@@ -38,7 +38,7 @@ func portScan(ipStr string,portStr string,rate int) error{
 		}
 	}
 	wg.Wait()
-	jasyncobj.Run()
+	jasyncobj.Run(rate)
 	jasyncobj.Wait()
 	jasyncobj.Clean()
 	//jtcpobj.Test()

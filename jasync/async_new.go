@@ -64,7 +64,11 @@ func (a *Async) subTaskCount() {
 	a.mu.Unlock()
 }
 
-func (a *Async) wait() {
+// 若传进来的值小于1，则使用配置文件中的默认值
+func (a *Async) wait(taskMaxLimit int) {
+	if taskMaxLimit < 1 {
+		taskMaxLimit = jconfig.Conf.AsyncConfig.TaskMaxLimit
+	}
 	var tmpPreVal int
 	tmpPreVal = -1
 	for {
@@ -80,10 +84,10 @@ func (a *Async) wait() {
 		//a.mu.RLock()
 		//doneTaskCount := a.total-a.count
 		//a.mu.RUnlock()
-		if tmpTaskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit {
+		if tmpTaskCount < taskMaxLimit {
 			break
 		}else{
-			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r",  jconfig.Conf.AsyncConfig.TaskMaxLimit,doneTaskCount)
+			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r",  taskMaxLimit,doneTaskCount)
 		}
 	}
 }
@@ -230,7 +234,7 @@ func (a *Async) Add(name string, handler interface{}, printHandler interface{}, 
 
 // Run 任务执行函数，成功时将返回一个用于接受结果的channel
 // 在所有异步任务都运行完成时，结果channel将会返回一个map[string][]interface{}的结果。
-func (a *Async) Run() (chan map[string][]interface{}, bool) {
+func (a *Async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool) {
 	if a.count < 1 {
 		return nil, false
 	}
@@ -275,9 +279,10 @@ func (a *Async) Run() (chan map[string][]interface{}, bool) {
 	// asyncTaskKey: name,asyncTaskVal:asyncTask
 	for asyncTaskKey, asyncTaskVal := range a.tasks {
 		// 等待，直到当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
-		a.wait()
+		a.wait(taskCountMaxLimit)
 		a.addTaskCount()
 		go func(taskName string, routinChans chan map[string]interface{}, task asyncTask) {
+
 			// 全局当前协程数量加一
 			jconfig.Conf.GlobalConfig.AddGlobalGoroutinCount()
 			// 若全局当前协程数量不小于全局配置中的最大协程数量，则等待

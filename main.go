@@ -4,6 +4,8 @@ import (
 	_ "github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jlog"
 	"os"
+	"strconv"
+
 	//_ "github.com/chroblert/jgoutils/jtest"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
 )
@@ -176,8 +178,8 @@ func main() {
 	//jasyncobj.Clean()
 	//jtcpobj.CloseHandle()
 
-
-	portScan(os.Args[1],os.Args[2],1000)
+	rate,_ := strconv.Atoi(os.Args[3])
+	portScan(os.Args[1],os.Args[2],rate)
 }
 
 func print(port string, status string, err error){
