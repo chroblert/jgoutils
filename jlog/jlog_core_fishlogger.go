@@ -113,6 +113,7 @@ func (fl *FishLogger) println(lv logLevel, args ...interface{}) {
 		buf = fl.header(lv, 0)
 	}
 	fmt.Fprintln(buf, args...)
+	// 将日志缓存写入到文件中
 	fl.write(lv, buf)
 }
 
@@ -149,9 +150,6 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer) {
 	defer fl.mu.Unlock()
 	data := buf.Bytes()
 	if fl.console {
-		//var begColor []byte
-		//var endColor []byte
-		//var tmpBytes []byte
 		switch lv {
 		case DEBUG:
 			// 黑底蓝字

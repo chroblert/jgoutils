@@ -208,36 +208,6 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	p.portScanTasks.Store(key,1)
 	start := time.Now()
 	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
-	//packetSource := gopacket.NewPacketSource(handle2,handle2.LinkType())
-	//for packet := range packetSource.Packets(){
-	//	if time.Since(start) > p.timeout {
-	//		//jlog.Printf("port %v filter\n", remotePort)
-	//		return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
-	//	}
-	//	if jnet := packet.NetworkLayer(); jnet == nil {
-	//	} else if jnet.NetworkFlow().String() != ipFlow.String() {
-	//		// log.Printf("packet does not match our ip src/dst")
-	//	} else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil {
-	//		// log.Printf("packet has not tcp layer")
-	//	} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
-	//		// We panic here because this is guaranteed to never
-	//		// happen.
-	//		//jlog.Error("tcp layer is not tcp layer :-/")
-	//		return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
-	//	} else if tcp.DstPort != layers.TCPPort(_srcPort) {
-	//		// log.Printf("dst port %v does not match", tcp.DstPort)
-	//	} else if tcp.RST {
-	//		//jlog.Printf("port %v closed\n", tcp.SrcPort)
-	//		return tcp.SrcPort.String(),"closed",nil
-	//	} else if tcp.SYN && tcp.ACK {
-	//		//jlog.Printf("port %v open\n", tcp.SrcPort)
-	//		return tcp.SrcPort.String(),"open",nil
-	//	} else {
-	//		jlog.Printf("ignoring useless packet")
-	//	}
-	//}
-	//return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
-
 
 	for{
 		if status,ok := p.portScanRes.Load(key); ok{
@@ -280,7 +250,7 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}else{
 			// 无效包
-			jlog.Fatal("xxxx")
+			jlog.Debug("xxxx")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}
 

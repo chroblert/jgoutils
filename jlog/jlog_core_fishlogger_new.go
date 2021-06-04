@@ -111,6 +111,7 @@ func (fl *FishLogger) println(lv logLevel, args ...interface{}) {
 		buf = fl.header(lv, 0)
 	}
 	fmt.Fprintln(buf, args...)
+	// 将日志缓存写入到文件中
 	fl.write(lv, buf)
 }
 
@@ -192,13 +193,18 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer) {
 			fl.exit(err)
 		}
 	}
-	// 按天切割
-	if fl.createDate != string(data[0:10]) {
-		go fl.delete() // 每天检测一次旧文件
-		if err := fl.rotate(); err != nil {
-			fl.exit(err)
+	// 自定义的一个loglevel，开头没有日期
+	if lv != 11{
+		// 按天切割
+		if fl.createDate != string(data[0:10]) {
+			go fl.delete() // 每天检测一次旧文件
+			log.Println("lv:",lv,"rotate测试：",fl.createDate,"string(data[0:10]):",string(data[0:10]),"_")
+			if err := fl.rotate(); err != nil {
+				fl.exit(err)
+			}
 		}
 	}
+
 	// 按大小切割
 	//log.Println("文件最大大小", fl.maxSizePerLogFile)
 	if fl.size+int64(len(data)) >= fl.maxSizePerLogFile {
@@ -262,11 +268,23 @@ func (fl *FishLogger) exit(err error) {
 }
 
 // rotate
+// 切割文件
+// 如果是第一次写入日志，
+//       -> 判断是否存在app.log文件；若存在，则重命名
+//		 -> 创建日志文件app.log
+//		 -> 判断当前日志文件数量是否小于规定个数；若大于则删除
+// 如果不是第一次写入日志，
+//       -> 判断当前日志文件的大小是否小于规定大小；若大于，则切割，
 func (fl *FishLogger) rotate() error {
 	now := time.Now()
+	// 分割文件
+	// 若日志文件已打开，则将缓存写入内存，再刷入磁盘
 	if fl.file != nil {
+		// 写入内存
 		fl.writer.Flush()
+		// 写入磁盘
 		fl.file.Sync()
+		// 关闭文件
 		err := fl.file.Close()
 		if err != nil {
 			log.Println("fl.file", err)
@@ -277,21 +295,48 @@ func (fl *FishLogger) rotate() error {
 		if err != nil {
 			log.Println("rename", err)
 		}
+		// 创建新日志文件app.log
+		newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		if err != nil {
+			return err
+		}
+		fl.file = newLogFile
 		fl.size = 0
+		// 日志缓存
+		fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
+	}else if fl.file == nil{
+		// 对于第一次写入文件
+		// 判断是否存在app.log日志文件，若存在则重命名
+		_, err := os.Stat(fl.fullLogFilePath)
+		if err == nil {
+			// 获取当前日志文件的创建日期
+			// 对日志文件进行重命名
+			fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
+			err = os.Rename(fl.fullLogFilePath, fileBackupName)
+			if err != nil {
+				log.Println("rename", err)
+			}
+		}
+		// 创建新日志文件app.log
+		newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		if err != nil {
+			return err
+		}
+		fl.file = newLogFile
+		fl.size = 0
+		// 日志缓存
+		fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
 	}
 	fileInfo, err := os.Stat(fl.fullLogFilePath)
 	fl.createDate = now.Format("2006/01/02")
 	if err == nil {
+		// 获取当前日志文件的大小
 		fl.size = fileInfo.Size()
+		// 获取当前日志文件的创建日期
 		fl.createDate = fileInfo.ModTime().Format("2006/01/02")
 	}
-	newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
-	if err != nil {
-		return err
-	}
-	fl.file = newLogFile
-	fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
-	// 日志文件的个数不能超过logCount个
+	//fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
+	// 日志文件的个数不能超过logCount个，若超过，则刪除最先创建的日志文件
 	pattern := fl.logFileName + ".*" + fl.logFileExt
 	for files, _ := filepath.Glob(pattern); len(files) > logCount; files, _ = filepath.Glob(pattern) {
 		// 删除log文件

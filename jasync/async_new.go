@@ -65,13 +65,22 @@ func (a *Async) subTaskCount() {
 }
 
 func (a *Async) wait() {
+	var tmpPreVal int
+	tmpPreVal = -1
 	for {
 		// 如果当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
 		a.mu.RLock()
-		tmp := a.taskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit
+		tmpTaskCount := a.taskCount
 		doneTaskCount := a.total-a.count
 		a.mu.RUnlock()
-		if tmp {
+		if tmpTaskCount == tmpPreVal{
+			continue
+		}
+		tmpPreVal = tmpTaskCount
+		//a.mu.RLock()
+		//doneTaskCount := a.total-a.count
+		//a.mu.RUnlock()
+		if tmpTaskCount < jconfig.Conf.AsyncConfig.TaskMaxLimit {
 			break
 		}else{
 			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r",  jconfig.Conf.AsyncConfig.TaskMaxLimit,doneTaskCount)
@@ -118,13 +127,24 @@ func (a *Async) GetTaskResult(taskName string) []interface{} {
 
 // 等待直到全部任务执行完成
 func (a *Async) Wait() {
+	var tmpPreVal int
+	tmpPreVal = -1
 	for {
-		if a.GetCount() < 1 {
+		a.mu.RLock()
+		tmpCount := a.count
+		tmpTotal := a.total
+		//doneTaskCount := a.total-a.count
+		a.mu.RUnlock()
+		if tmpCount == tmpPreVal{
+			continue
+		}
+		//jlog.Debug("tmpCount:",tmpCount,"tmpPreVal:",tmpPreVal)
+		tmpPreVal = tmpCount
+		if tmpCount < 1 {
 			break
 		}
-		time.Sleep(time.Nanosecond * 500)
-		jlog.Infof("%d/%d\r", a.GetTotal()-a.count, a.GetTotal())
-		//fmt.Printf("%d/%d\r",a.GetTotal()-a.count,a.GetTotal())
+		//time.Sleep(time.Nanosecond * 500)
+		jlog.Infof("%d/%d\r", tmpTotal-tmpCount, tmpTotal)
 	}
 	a.mu.RLock()
 	doneTaskCount := a.total-a.count
