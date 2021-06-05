@@ -53,7 +53,7 @@ func New() *tcpMsg {
 		localNetworkInst: tmp[0],
 		snapshot_len:     1024,
 		promiscuous:      false,
-		timeout:          3 * time.Second,
+		timeout:          5 * time.Second,
 		handle: &pcap.Handle{},
 		buffer: gopacket.NewSerializeBuffer(),
 		options: gopacket.SerializeOptions{
@@ -69,12 +69,15 @@ func New() *tcpMsg {
 	for i := 0; i < len(tmp);i++{
 		if err := tm.SetNetwork(i); err == nil{
 			break
+		}else if i == len(tmp) -1{
+			jlog.Error("获取网关的MAC地址失败")
+			return nil
 		}
 	}
 	//// 获取路由表
 	//rt := jroute.NewRouteTable()
 	//// 从路由表中获取接口IP的网关IP
-	//gwIPStr,err := rt.GetGatewayByDstIP(tm.localNetworkInst.LocalIP)
+	//gwIPStr,err := rt.GetGatewayByIfIP(tm.localNetworkInst.LocalIP)
 	//if err != nil{
 	//	jlog.Error(err)
 	//	return nil
@@ -86,7 +89,7 @@ func New() *tcpMsg {
 	//	jlog.Error(err)
 	//	for i := 1;i<len(tmp);i++{
 	//		tm.SetNetwork(i)
-	//		gwIPStr,err := rt.GetGatewayByDstIP(tm.localNetworkInst.LocalIP)
+	//		gwIPStr,err := rt.GetGatewayByIfIP(tm.localNetworkInst.LocalIP)
 	//		if err != nil{
 	//			jlog.Error(err)
 	//			return nil
@@ -123,7 +126,7 @@ func (p *tcpMsg)SetNetwork(id int) error{
 	// 获取路由表
 	rt := jroute.NewRouteTable()
 	// 从路由表中获取接口IP的网关IP
-	gwIPStr,err := rt.GetGatewayByDstIP(p.localNetworkInst.LocalIP)
+	gwIPStr,err := rt.GetGatewayByIfIP(p.localNetworkInst.LocalIP)
 	if err != nil{
 		jlog.Error(err)
 		return err
@@ -321,7 +324,7 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 			return fmt.Sprintf("%v",remotePort),status.(string),nil
 		}
 		if time.Since(start) > p.timeout {
-			//jlog.Warn(remotePort,"start:",start.String(),"超时",time.Since(start).String(),"p.timeout:",p.timeout)
+			jlog.Warn(remotePort,"start:",start.String(),"超时",time.Since(start).String(),"p.timeout:",p.timeout)
 			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
 		}
 		//jlog.Error(remotePort,"start:",start.String(),"准备",time.Since(start).String(),"p.timeout:",p.timeout)
@@ -351,6 +354,7 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"closed")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		} else if tcp.SYN && tcp.ACK {
+			jlog.Debug("端口开放，",remotePort)
 			// 端口开放
 			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
@@ -387,7 +391,7 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 		DstHwAddress:      []byte{0, 0, 0, 0, 0, 0},
 		DstProtAddress:    []byte(_dstIP.To4()),
 	}
-	jlog.Debug(dstIPStr)
+	jlog.Debug("GateWayIP:",dstIPStr)
 	if err := gopacket.SerializeLayers(p.buffer, p.options, eth,arp); err != nil {
 		jlog.Fatal(err)
 	}
@@ -395,9 +399,9 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 
 	// Wait 3 seconds for an ARP reply.
 	for {
-		if time.Since(start) > time.Second*4 {
+		if time.Since(start) > p.timeout {
 			jlog.Error("timeout getting ARP reply")
-			return "",fmt.Errorf("timeout getting ARP reply")
+			return "",fmt.Errorf(dstIPStr,"timeout getting getway mac")
 		}
 		data, _, err := p.handle.ReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {

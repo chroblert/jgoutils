@@ -23,27 +23,29 @@ func portScan(ipStr string,portStr string,rate int) error{
 		return fmt.Errorf("nil port")
 	}
 	jtcpobj := jtcp.New()
-	jcore.ShowNetworks()
-	jtcpobj.SetNetwork(2)
-	jasyncobj := jasync.New()
-	var wg = new(sync.WaitGroup)
-	for _,v := range t{
-		//jlog.Info(v)
-		for _,v2 := range p{
-			wg.Add(1)
-			go func(v string,v2 int){
-				jasyncobj.Add(v+":"+strconv.Itoa(v2),jtcpobj.SinglePortSYNScan,print,v,uint16(v2),"test")
-				wg.Done()
-			}(v,v2)
+	if jtcpobj != nil{
+		jcore.ShowNetworks()
+		//jtcpobj.SetNetwork(2)
+		jasyncobj := jasync.New()
+		var wg = new(sync.WaitGroup)
+		for _,v := range t{
+			//jlog.Info(v)
+			for _,v2 := range p{
+				wg.Add(1)
+				go func(v string,v2 int){
+					jasyncobj.Add(v+":"+strconv.Itoa(v2),jtcpobj.SinglePortSYNScan,print,v,uint16(v2),"test")
+					wg.Done()
+				}(v,v2)
+			}
 		}
+		wg.Wait()
+		jasyncobj.Run(rate)
+		jasyncobj.Wait()
+		jasyncobj.Clean()
+		//jtcpobj.Test()
+		jtcpobj.Test()
+		//time.Sleep(3*time.Second)
+		jtcpobj.CloseHandle()
 	}
-	wg.Wait()
-	jasyncobj.Run(rate)
-	jasyncobj.Wait()
-	jasyncobj.Clean()
-	//jtcpobj.Test()
-	//time.Sleep(3*time.Second)
-	jtcpobj.CloseHandle()
-	//time.Sleep(3*time.Second)
 	return nil
 }

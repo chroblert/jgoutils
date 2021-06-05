@@ -35,5 +35,5 @@ type RouteTable interface {
 	//ResetRoute() error
 
 	// 获取接口IP的网关IP
-	GetGatewayByDstIP(ifIPStr string) (string,error)
+	GetGatewayByIfIP(ifIPStr string) (string,error)
 }
