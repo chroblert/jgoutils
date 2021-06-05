@@ -225,31 +225,6 @@ func (p *tcpMsg) RecvScanRes()(){
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}
 
-		//if jnet := packet.NetworkLayer(); jnet == nil {
-		//} else if jnet.NetworkFlow().String() != ipFlow.String() {
-		//	// log.Printf("packet does not match our ip src/dst")
-		//} else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil {
-		//	// log.Printf("packet has not tcp layer")
-		//} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
-		//	//jlog.Error("tcp layer is not tcp layer :-/")
-		//	return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
-		//	//} else if _,ok := p.portScanTasks[jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()]; !ok{
-		//} else if _,ok := p.portScanTasks.Load(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] ); !ok{
-		//	// 接收到的数据包的flow与已发送的flow不匹配
-		//}else  if tcp.RST {
-		//	// 端口关闭
-		//	p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"closed")
-		//	p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		//} else if tcp.SYN && tcp.ACK {
-		//	// 端口开放
-		//	p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
-		//	p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		//}else{
-		//	// 无效包
-		//	jlog.Debug("xxxx")
-		//	p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		//}
-
 	}
 }
 
@@ -392,14 +367,15 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 		DstProtAddress:    []byte(_dstIP.To4()),
 	}
 	jlog.Debug("GateWayIP:",dstIPStr)
-	if err := gopacket.SerializeLayers(p.buffer, p.options, eth,arp); err != nil {
-		jlog.Fatal(err)
-	}
-	p.handle.WritePacketData(p.buffer.Bytes())
+	//if err := gopacket.SerializeLayers(p.buffer, p.options, eth,arp); err != nil {
+	//	jlog.Fatal(err)
+	//}
+	//p.handle.WritePacketData(p.buffer.Bytes())
+	p.send(eth,arp)
 
 	// Wait 3 seconds for an ARP reply.
 	for {
-		if time.Since(start) > p.timeout {
+		if time.Since(start) > p.timeout*2 {
 			jlog.Error("timeout getting ARP reply")
 			return "",fmt.Errorf(dstIPStr,"timeout getting getway mac")
 		}
@@ -412,10 +388,9 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 		if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
 			arp := arpLayer.(*layers.ARP)
-			//jlog.Println(net.IP(arp.SourceProtAddress))
-			//jlog.Println(net.ParseIP(dstIPStr))
+			jlog.Debug("src:",arp.SourceProtAddress)
+			jlog.Debug("dst:",arp.DstProtAddress)
 			if net.IP(arp.SourceProtAddress).Equal(net.ParseIP(dstIPStr)) {
-				//return net.HardwareAddr(arp.SourceHwAddress), nil
 				jlog.Debug(net.HardwareAddr(arp.SourceHwAddress))
 				GWMACStr = net.HardwareAddr(arp.SourceHwAddress).String()
 				return GWMACStr,nil
