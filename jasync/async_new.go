@@ -87,7 +87,7 @@ func (a *Async) wait(taskMaxLimit int) {
 		if tmpTaskCount < taskMaxLimit {
 			break
 		}else{
-			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r",  taskMaxLimit,doneTaskCount)
+			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskMaxLimit,doneTaskCount)
 		}
 	}
 }

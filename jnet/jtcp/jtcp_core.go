@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/petermattis/goid"
 	"net"
 	"strconv"
 	"strings"
@@ -44,6 +45,8 @@ type tcpMsg struct{
 	mu *sync.RWMutex
 	//portScanTasks map[string]
 	portScanTasks *sync.Map
+	portScanCount int
+	isRecvScanRes bool
 
 }
 
@@ -53,7 +56,7 @@ func New() *tcpMsg {
 		localNetworkInst: tmp[0],
 		snapshot_len:     1024,
 		promiscuous:      false,
-		timeout:          5 * time.Second,
+		timeout:          500*time.Millisecond,
 		handle: &pcap.Handle{},
 		buffer: gopacket.NewSerializeBuffer(),
 		options: gopacket.SerializeOptions{
@@ -65,6 +68,8 @@ func New() *tcpMsg {
 		mu: new(sync.RWMutex),
 		//portScanTasks: make(map[string]int),
 		portScanTasks: &sync.Map{},
+		portScanCount: 0,
+		isRecvScanRes:false,
 	}
 	for i := 0; i < len(tmp);i++{
 		if err := tm.SetNetwork(i); err == nil{
@@ -74,34 +79,6 @@ func New() *tcpMsg {
 			return nil
 		}
 	}
-	//// 获取路由表
-	//rt := jroute.NewRouteTable()
-	//// 从路由表中获取接口IP的网关IP
-	//gwIPStr,err := rt.GetGatewayByIfIP(tm.localNetworkInst.LocalIP)
-	//if err != nil{
-	//	jlog.Error(err)
-	//	return nil
-	//}
-	//tm.SetNetwork(0)
-	//// 获取网关IP的MAC地址
-	//gwMacStr,err := tm.GetHWAddr(gwIPStr)
-	//if err != nil{ // 从接口0没有成功获取到网关IP的mac地址
-	//	jlog.Error(err)
-	//	for i := 1;i<len(tmp);i++{
-	//		tm.SetNetwork(i)
-	//		gwIPStr,err := rt.GetGatewayByIfIP(tm.localNetworkInst.LocalIP)
-	//		if err != nil{
-	//			jlog.Error(err)
-	//			return nil
-	//		}
-	//		gwMacStr,err := tm.GetHWAddr(gwIPStr)
-	//		if err == nil{
-	//			tm.remoteMAC = gwMacStr
-	//			break
-	//		}
-	//	}
-	//}
-	//tm.remoteMAC = gwMacStr
 	return tm
 }
 
@@ -144,18 +121,6 @@ func (p *tcpMsg)CloseHandle(){
 	p.handle.Close()
 }
 
-//func (p *tcpMsg)SetPortScanRes(key string,val string){
-//	if val != "open" && val != "closed"{
-//		p.mu.RLock()
-//		p.portScanRes[key]="filter"
-//		p.mu.RUnlock()
-//	}else{
-//		p.mu.RLock()
-//		p.portScanRes[key]="filter"
-//		p.mu.RUnlock()
-//	}
-//}
-
 // send sends the given layers as a single packet on the network.
 func (p *tcpMsg) send(l ...gopacket.SerializableLayer) error {
 	buffer := gopacket.NewSerializeBuffer()
@@ -172,7 +137,9 @@ func (p *tcpMsg) send(l ...gopacket.SerializableLayer) error {
 func (p *tcpMsg) Test(){
 	jlog.Info("portScanRes")
 	p.portScanRes.Range(func(key, value interface{}) bool {
-		jlog.Info("key:",key,"val:",value)
+		if value == "open"{
+			jlog.Info("key:",key,"val:",value)
+		}
 		return true
 	})
 	jlog.Info("portScanTasks")
@@ -182,64 +149,106 @@ func (p *tcpMsg) Test(){
 	//})
 }
 
-func (p *tcpMsg) RecvScanRes()(){
+//func (p *tcpMsg) RecvScanRes(start time.Time,ipStr string,remotePort string,localPort string)(portStr string,status string,err error){
+func (p *tcpMsg) RecvScanRes(remoteIP string,remotePort string,localPort string){
+	//jlog.Error(goid.Get(),"test==============")
+	p.mu.RLock()
+	tmpIsStartRecvScanRes := p.isRecvScanRes
+	p.mu.RUnlock()
+	//jlog.Error(goid.Get(),"isRecvScanRes: ",tmpIsStartRecvScanRes)
+	if tmpIsStartRecvScanRes{
+		//jlog.Warn(goid.Get(),"退出RecvScanRes")
+		//time.Sleep(6*time.Second)
+		//key2 := p.localNetworkInst.LocalIP+":"+localPort+"-"+remoteIP+":"+remotePort
+		//if _,ok := p.portScanRes.Load(key2); !ok{
+		//	jlog.Warn(goid.Get(),key2)
+		//	p.portScanRes.Store(key2,"filter")
+		//	p.mu.Lock()
+		//	p.portScanCount--
+		//	p.mu.Unlock()
+		//}
+		return
+	}
+	p.mu.Lock()
+	p.isRecvScanRes = true
+	//jlog.Warn(goid.Get(),": 设置true")
+	p.mu.Unlock()
+	start := time.Now()
 	for{
-		//if status,ok := p.portScanRes.Load(key); ok{
-		//	p.portScanTasks.Delete(key)
-		//	p.portScanRes.Delete(key)
-		//	return fmt.Sprintf("%v",remotePort),status.(string),nil
-		//}
-		//if time.Since(start) > p.timeout {
-		//	//jlog.Error("start:",start.String(),remotePort,"超时",time.Since(start).String())
-		//	return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
-		//}
+		p.mu.RLock()
+		tmpPortScanCount := p.portScanCount
+		p.mu.RUnlock()
+		//jlog.Warn(goid.Get(),":",tmpPortScanCount)
+		if tmpPortScanCount < 1{
+			jlog.Warn(goid.Get(),"接收完成")
+			return
+		}
+		if time.Since(start) > 3*time.Second{
+			return
+		}
 		// 读取数据包
 		data, _, err := p.handle.ReadPacketData()
 		if err == pcap.NextErrorTimeoutExpired {
-			jlog.Error("readPacketData:1err:",err)
 			continue
 		} else if err != nil {
-			jlog.Error("readPacketData:err:",err)
 			continue
 		}
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 
 		// 网络层
 		if jnet := packet.NetworkLayer(); jnet == nil {
+			continue
 		}else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil { // 传输层
 			// log.Printf("packet has not tcp layer")
+			continue
 		}else if tcp, ok := tcpLayer.(*layers.TCP); !ok { // 解码成标准传输层
+			continue
 		}else if _,ok := p.portScanTasks.Load(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] ); !ok{
 			// 接收到的数据包的flow与已发送的flow不匹配
+			continue
 		}else  if tcp.RST {
+			p.mu.Lock()
+			p.portScanCount--
+			p.mu.Unlock()
+			//jlog.Warn(goid.Get(),":",strings.Split(tcp.SrcPort.String(),"(")[0]+":"+" closed")
 			// 端口关闭
 			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"closed")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		} else if tcp.SYN && tcp.ACK {
+			p.mu.Lock()
+			p.portScanCount--
+			p.mu.Unlock()
+			jlog.Warn(goid.Get(),":",strings.Split(tcp.SrcPort.String(),"(")[0]+":"+" open")
+			//jlog.Warn(goid.Get(),":",jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] )
 			// 端口开放
 			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}else{
+			p.mu.Lock()
+			p.portScanCount--
+			p.mu.Unlock()
 			// 无效包
-			jlog.Debug("xxxx")
+			jlog.Debug(goid.Get(),":","xxxx")
 			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
 		}
+		start = time.Now()
+
 
 	}
 }
 
 // 发送tcp syn数据包
-func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload string) (port string,status string,err error){
+func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload string) (ipStr,port string,status string,err error){
 	// 数据链路层
 	_srcMAC,err := net.ParseMAC(p.localNetworkInst.LocalMAC)
 	if err != nil{
 		jlog.Error(err)
-		return "", "", err
+		return "","", "", err
 	}
 	_dstMAC,err := net.ParseMAC(p.remoteMAC)
 	if err != nil{
 		jlog.Error(err)
-		return "","",err
+		return "","","",err
 	}
 	ethernetLayer := &layers.Ethernet{
 		SrcMAC: _srcMAC,
@@ -284,63 +293,78 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	err = p.send(ethernetLayer,ipLayer,tcpLayer)
 	if err != nil{
 		jlog.Error(err)
-		return "","",err
+		return "","","",err
 	}
+	//jlog.Warn(goid.Get(),": send :",remotePort)
+	p.mu.Lock()
+	p.portScanCount ++
+	p.mu.Unlock()
+	//p.mu.RLock()
+	//if p.portScanCount == 1{
+	//	jlog.Warn("go p.RecvScanRes()")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func(remoteIP string,remotePort string,localPort string) {
+		p.RecvScanRes(remoteIP ,remotePort ,localPort )
+		wg.Done()
+	}(remoteIP,strconv.Itoa(int(remotePort)),strconv.Itoa(int(_srcPort)))
+	wg.Wait()
+	//}
+	//p.mu.RUnlock()
+
 	key := p.localNetworkInst.LocalIP+":"+strconv.Itoa(int(_srcPort))+"-"+remoteIP+":"+strconv.Itoa(int(remotePort))
-
 	p.portScanTasks.Store(key,1)
-	start := time.Now()
-	ipFlow := gopacket.NewFlow(layers.EndpointIPv4, net.ParseIP(remoteIP), net.ParseIP(p.localNetworkInst.LocalIP))
 
-	for{
-		if status,ok := p.portScanRes.Load(key); ok{
-			p.portScanTasks.Delete(key)
-			p.portScanRes.Delete(key)
-			return fmt.Sprintf("%v",remotePort),status.(string),nil
-		}
-		if time.Since(start) > p.timeout {
-			jlog.Warn(remotePort,"start:",start.String(),"超时",time.Since(start).String(),"p.timeout:",p.timeout)
-			return fmt.Sprintf("%v",remotePort),"filter",fmt.Errorf("timeout")
-		}
-		//jlog.Error(remotePort,"start:",start.String(),"准备",time.Since(start).String(),"p.timeout:",p.timeout)
-		data, _, err := p.handle.ReadPacketData()
-		//jlog.Error(remotePort,"start:",start.String(),"获取到",time.Since(start).String(),"p.timeout:",p.timeout)
-		if err == pcap.NextErrorTimeoutExpired {
-			jlog.Error("readPacketData:1err:",remotePort,err)
-			continue
-		} else if err != nil {
-			jlog.Error("readPacketData:err:",err)
-			continue
-		}
-		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
-		if jnet := packet.NetworkLayer(); jnet == nil {
-		} else if jnet.NetworkFlow().String() != ipFlow.String() {
-			// log.Printf("packet does not match our ip src/dst")
-		} else if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer == nil {
-			// log.Printf("packet has not tcp layer")
-		} else if tcp, ok := tcpLayer.(*layers.TCP); !ok {
-			//jlog.Error("tcp layer is not tcp layer :-/")
-			return fmt.Sprintf("%v",remotePort),"",fmt.Errorf("tcp layer is not tcp layer")
-		//} else if _,ok := p.portScanTasks[jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+tcp.SrcPort.String()]; !ok{
-		} else if _,ok := p.portScanTasks.Load(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] ); !ok{
-			// 接收到的数据包的flow与已发送的flow不匹配
-		}else  if tcp.RST {
-			// 端口关闭
-			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"closed")
-			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		} else if tcp.SYN && tcp.ACK {
-			jlog.Debug("端口开放，",remotePort)
-			// 端口开放
-			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
-			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		}else{
-			// 无效包
-			jlog.Debug("xxxx")
-			p.portScanTasks.Delete(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0])
-		}
 
-	}
+	//start := time.Now()
+	//for{
+	//	if 	val,ok := p.portScanRes.Load(key);ok{
+	//		//if val == "open"{
+	//		//	jlog.Debug(remotePort,":",val)
+	//		//}
+	//		//p.portScanTasks.Delete(key)
+	//		return strconv.Itoa(int(remotePort)), val.(string), nil
+	//	}
+	//	if time.Since(start) > 1*time.Second {
+	//		//jlog.Debug(time.Since(start))
+	//		//p.portScanTasks.Delete(key)
+	//		return strconv.Itoa(int(remotePort)), "filter", fmt.Errorf("timeout")
+	//	}
+	//}
+	//start := time.Now()
+	//defer func() {
+	//	jlog.Warn(goid.Get(),":退出")
+	//}()
+	//for{
+	//	//p.portScanRes.Range(func(key1, value interface{}) bool {
+	//	//	if key == key1{
+	//	//		jlog.Warn(goid.Get()," : ",key,":",value)
+	//	//		p.mu.Lock()
+	//	//		p.portScanCount--
+	//	//		p.mu.Unlock()
+	//	//		return false
+	//	//	}
+	//	//	return true
+	//	//})
+	//	if val,ok := p.portScanRes.Load(key);ok {
+	//		jlog.Warn(goid.Get(),":",remotePort,val)
+	//		p.mu.Lock()
+	//		p.portScanCount--
+	//		p.mu.Unlock()
+	//		return strconv.Itoa(int(remotePort)), val.(string), nil
+	//	}
+	//	if time.Since(start) > 1*time.Second {
+	//		//jlog.Debug(time.Since(start))
+	//		//p.portScanTasks.Delete(key)
+	//		p.mu.Lock()
+	//		p.portScanCount--
+	//		p.mu.Unlock()
+	//		//jlog.Warn(goid.Get(),":超时，",remotePort)
+	//		return strconv.Itoa(int(remotePort)), "filter", fmt.Errorf("timeout")
+	//	}
+	//}
 
+	return "","", "", nil
 }
 
 func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
@@ -388,10 +412,10 @@ func (p *tcpMsg)GetHWAddr(dstIPStr string) (GWMACStr string,err error){
 		packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.NoCopy)
 		if arpLayer := packet.Layer(layers.LayerTypeARP); arpLayer != nil {
 			arp := arpLayer.(*layers.ARP)
-			jlog.Debug("src:",arp.SourceProtAddress)
-			jlog.Debug("dst:",arp.DstProtAddress)
+			//jlog.Debug("src:",arp.SourceProtAddress)
+			//jlog.Debug("dst:",arp.DstProtAddress)
 			if net.IP(arp.SourceProtAddress).Equal(net.ParseIP(dstIPStr)) {
-				jlog.Debug(net.HardwareAddr(arp.SourceHwAddress))
+				//jlog.Debug(net.HardwareAddr(arp.SourceHwAddress))
 				GWMACStr = net.HardwareAddr(arp.SourceHwAddress).String()
 				return GWMACStr,nil
 			}

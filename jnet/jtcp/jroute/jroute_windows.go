@@ -273,7 +273,7 @@ func (rt *routeTable) ResetRoute() error {
 
 // 210602: JC0o0l add
 // 获取接口IP的网关IP
-func (rt *routeTable)GetGatewayByDstIP(ifIPStr string) (string,error){
+func (rt *routeTable)GetGatewayByIfIP(ifIPStr string) (string,error){
 	ipMacName := jcore.GetIPMACName()
 	sucFlag := false
 	// 获取接口IP的接口索引

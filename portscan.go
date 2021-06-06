@@ -39,11 +39,15 @@ func portScan(ipStr string,portStr string,rate int) error{
 			}
 		}
 		wg.Wait()
+		//jlog.Debug("sleep 100 second")
+		//time.Sleep(100*time.Second)
 		jasyncobj.Run(rate)
+		//jtcpobj.RecvScanRes()
+
 		jasyncobj.Wait()
+		//jtcpobj.Test()
 		jasyncobj.Clean()
 		//jtcpobj.Test()
-		jtcpobj.Test()
 		//time.Sleep(3*time.Second)
 		jtcpobj.CloseHandle()
 	}
