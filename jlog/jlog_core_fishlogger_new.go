@@ -126,7 +126,7 @@ func (fl *FishLogger) printf(lv logLevel, format string, args ...interface{}) {
 		//buf.Write([]byte("\x1b[1K"))
 	} else {
 		//buf = &buffer{}
-		//buf.Write([]byte("\x1b[1K\r"))
+		//buf.Write([]byte("\x1b[1K"))
 		buf = fl.header(lv, 0)
 		//buf.Write(buf2.Bytes())
 	}

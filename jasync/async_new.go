@@ -39,7 +39,11 @@ type Async struct {
 
 // New 创建一个新的异步执行对象
 func New() Async {
-	return Async{tasks: make(map[string]asyncTask), mu: new(sync.RWMutex), tasksResult: make(map[string][]interface{})}
+	return Async{
+		tasks: make(map[string]asyncTask),
+		mu: new(sync.RWMutex),
+		tasksResult: make(map[string][]interface{}),
+	}
 }
 
 //GetTotal 获取总共的任务数
@@ -75,6 +79,7 @@ func (a *Async) wait(taskMaxLimit int) {
 		// 如果当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
 		a.mu.RLock()
 		tmpTaskCount := a.taskCount
+		tmpTotal := a.total
 		doneTaskCount := a.total-a.count
 		a.mu.RUnlock()
 		if tmpTaskCount == tmpPreVal{
@@ -87,7 +92,8 @@ func (a *Async) wait(taskMaxLimit int) {
 		if tmpTaskCount < taskMaxLimit {
 			break
 		}else{
-			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskMaxLimit,doneTaskCount)
+			//jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskMaxLimit,doneTaskCount)
+			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v/%v\r",  taskMaxLimit,doneTaskCount,tmpTotal)
 		}
 	}
 }
