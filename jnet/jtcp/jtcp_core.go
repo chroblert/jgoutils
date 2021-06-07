@@ -218,7 +218,7 @@ func (p *tcpMsg) RecvScanRes(remoteIP string,remotePort string,localPort string)
 			p.mu.Lock()
 			p.portScanCount--
 			p.mu.Unlock()
-			jlog.Warn(goid.Get(),":",strings.Split(tcp.SrcPort.String(),"(")[0]+":"+" open")
+			jlog.Warn(goid.Get(),":",jnet.NetworkFlow().Src().String(),strings.Split(tcp.SrcPort.String(),"(")[0]+":"+" open")
 			//jlog.Warn(goid.Get(),":",jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+ strings.Split(tcp.SrcPort.String(),"(")[0] )
 			// 端口开放
 			p.portScanRes.Store(jnet.NetworkFlow().Dst().String()+":"+tcp.DstPort.String()+"-"+jnet.NetworkFlow().Src().String()+":"+strings.Split(tcp.SrcPort.String(),"(")[0],"open")
@@ -302,6 +302,8 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	//p.mu.RLock()
 	//if p.portScanCount == 1{
 	//	jlog.Warn("go p.RecvScanRes()")
+	key := p.localNetworkInst.LocalIP+":"+strconv.Itoa(int(_srcPort))+"-"+remoteIP+":"+strconv.Itoa(int(remotePort))
+	p.portScanTasks.Store(key,1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func(remoteIP string,remotePort string,localPort string) {
@@ -312,8 +314,7 @@ func (p *tcpMsg) SinglePortSYNScan(remoteIP string,remotePort uint16,payload str
 	//}
 	//p.mu.RUnlock()
 
-	key := p.localNetworkInst.LocalIP+":"+strconv.Itoa(int(_srcPort))+"-"+remoteIP+":"+strconv.Itoa(int(remotePort))
-	p.portScanTasks.Store(key,1)
+
 
 
 	//start := time.Now()
