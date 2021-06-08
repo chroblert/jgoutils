@@ -9,14 +9,13 @@ require (
 	github.com/desertbit/readline v1.5.1
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
-	github.com/google/gopacket v1.1.19 // indirect
-	github.com/gophercloud/gophercloud v0.17.0 // indirect
-	github.com/jackpal/gateway v1.0.7 // indirect
+	github.com/google/gopacket v1.1.19
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-isatty v0.0.12
-	github.com/panjf2000/ants/v2 v2.4.5 // indirect
-	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
+	github.com/panjf2000/ants/v2 v2.4.5
+	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5
 	github.com/spf13/viper v1.7.1
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
 	golang.org/x/text v0.3.3 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

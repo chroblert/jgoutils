@@ -47,7 +47,6 @@ type tcpMsg struct{
 	portScanTasks *sync.Map
 	portScanCount int
 	isRecvScanRes bool
-
 }
 
 func New() *tcpMsg {
