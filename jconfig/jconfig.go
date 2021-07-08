@@ -92,22 +92,22 @@ func init() {
 	viper.SetConfigType("json")
 	// 读取配置文件到viper中
 	if err := viper.ReadInConfig(); err != nil {
-		log.Println("viper 读取配置文件失败", err)
-		log.Println("使用内置的配置")
+		//log.Println("viper 读取配置文件失败", err)
+		//log.Println("使用内置的配置")
 		setDefaultConfig()
 		return
 	}
 	// 将读取的配置信息保存至全局变量Conf
 	if err := viper.Unmarshal(&Conf); err != nil {
-		log.Println("viper 反序列化配置文件失败", err)
-		log.Println("使用内置的配置")
+		//log.Println("viper 反序列化配置文件失败", err)
+		//log.Println("使用内置的配置")
 		setDefaultConfig()
 		return
 	}
 	// 监控配置文件变化
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Println("配置文件被修改")
+		//log.Println("配置文件被修改")
 		if err := viper.Unmarshal(&Conf); err != nil {
 			log.Println("viper 反序列化配置文件失败")
 			return
@@ -139,22 +139,22 @@ func InitWithFile(configFile string) {
 	viper.SetConfigType("json")
 	// 读取配置文件到viper中
 	if err := viper.ReadInConfig(); err != nil {
-		log.Println("viper 读取配置文件失败", err)
-		log.Println("使用内置的配置")
+		//log.Println("viper 读取配置文件失败", err)
+		//log.Println("使用内置的配置")
 		setDefaultConfig()
 		return
 	}
 	// 将读取的配置信息保存至全局变量Conf
 	if err := viper.Unmarshal(&Conf); err != nil {
-		log.Println("viper 反序列化配置文件失败", err)
-		log.Println("使用内置的配置")
+		//log.Println("viper 反序列化配置文件失败", err)
+		//log.Println("使用内置的配置")
 		setDefaultConfig()
 		return
 	}
 	// 监控配置文件变化
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Println("配置文件被修改")
+		//log.Println("配置文件被修改")
 		if err := viper.Unmarshal(&Conf); err != nil {
 			log.Println("viper 反序列化配置文件失败")
 			return
@@ -203,10 +203,10 @@ func setDefaultConfig() {
 	}
 }
 
-func Set(key string,val interface{}){
-	viper.Set(key,val)
+func Set(key string, val interface{}) {
+	viper.Set(key, val)
 }
 
-func Get(key string) interface{}{
+func Get(key string) interface{} {
 	return viper.Get(key)
 }
