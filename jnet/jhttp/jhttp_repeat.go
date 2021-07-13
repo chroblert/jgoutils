@@ -39,7 +39,7 @@ func (hm *httpMsg) Repeat(counts ...int) map[string][]interface{} {
 		}
 	} else if hm.reqMethod == "POST" {
 		for i := 0; i < asyncCount; i++ {
-			jasyncobj.Add(strconv.Itoa(i), jrequests.Get, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
+			jasyncobj.Add(strconv.Itoa(i), jrequests.Post, nil, hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
 		}
 	} else {
 		return map[string][]interface{}{"0": []interface{}{0, nil, nil, fmt.Errorf("only GET or POST yet")}}
