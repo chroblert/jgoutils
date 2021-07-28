@@ -7,6 +7,7 @@ import (
 	"github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jfile"
 	"github.com/chroblert/jgoutils/jlog"
+	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,9 +36,14 @@ import (
 func SingleReq(method, reqUrl string, option Option) (statuscode int, respheaders map[string][]string, body []byte, err error) {
 	var client *http.Client
 	client = &http.Client{}
+
 	// 设置代理
 	var httpTransport *http.Transport
+	var http2Transport *http2.Transport
 	httpTransport = &http.Transport{}
+	http2Transport = &http2.Transport{}
+
+
 	if option.Proxy != "" {
 		proxy2 := func(_ *http.Request) (*url.URL, error) {
 			return url.Parse(option.Proxy)
@@ -48,6 +54,9 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	if !option.IsVerifySSL {
 		//jlog.Info("jinlaiyaxxxxxx")
 		httpTransport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, // 遇到不安全的https跳过验证
+		}
+		http2Transport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true, // 遇到不安全的https跳过验证
 		}
 	} else {
@@ -71,13 +80,22 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 				httpTransport.TLSClientConfig = &tls.Config{
 					RootCAs: clientCrtPool,
 				}
+				http2Transport.TLSClientConfig = &tls.Config{
+					RootCAs: clientCrtPool,
+				}
 			}
 		}
 	}
 	// 设置httptransport
-	if httpTransport != nil {
-		//jlog.Debug("使用httptransport:",httpTransport.TLSClientConfig)
+	//if httpTransport != nil {
+	//	//jlog.Debug("使用httptransport:",httpTransport.TLSClientConfig)
+	//	client.Transport = httpTransport
+	//}
+	switch option.HttpVersion {
+	case 1:
 		client.Transport = httpTransport
+	case 2:
+		client.Transport = http2Transport
 	}
 	// 设置超时
 	if option.Timeout != 0 {

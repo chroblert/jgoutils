@@ -12,6 +12,7 @@ type Option struct {
 	Cookies     map[string]string
 	IsRedirect  bool
 	IsVerifySSL bool
+	HttpVersion int
 }
 
 // 一个接口
@@ -91,6 +92,13 @@ func SetIsRedirect(isredirect bool) OptionInterface {
 	})
 }
 
+// 设置http 2.0
+func SetHttpVersion(version int) OptionInterface {
+	return newFuncOption(func(o *Option) {
+		o.HttpVersion = version
+	})
+}
+
 // 设置是否转发
 func SetIsVerifySSL(isverifyssl bool) OptionInterface {
 	return newFuncOption(func(o *Option) {
@@ -111,5 +119,6 @@ func getDefaultOptions() Option {
 		Cookies:     nil,
 		IsRedirect:  jconfig.Conf.RequestsConfig.IsRedirect,
 		IsVerifySSL: jconfig.Conf.RequestsConfig.IsVerifySSL,
+		HttpVersion: 1,
 	}
 }
