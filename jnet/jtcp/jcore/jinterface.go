@@ -50,7 +50,8 @@ func GetNetWorks() []*LocalNetwork {
 	// find all devices
 	devices,err := pcap.FindAllDevs()
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return nil
 	}
 	// 枚举所有的网络设备
 	for _,v := range devices{

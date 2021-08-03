@@ -296,7 +296,8 @@ loop:
 	}
 	rs,err := rt.getRoutes()
 	if err != nil{
-		jlog.Fatal(err)
+		jlog.Error(err)
+		return "", err
 	}
 	for _,r := range rs{
 		//jlog.Debug("ForwardType:", r.ForwardType, "ForwardProto:", r.ForwardProto, "network:", r.GetForwardDest(), "mask:", r.GetForwardMask(), "g:", r.GetForwardNextHop(),"ifIndex:",r.ForwardIfIndex)

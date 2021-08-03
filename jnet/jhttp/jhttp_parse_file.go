@@ -39,7 +39,7 @@ func (hm *httpMsg) parseFromBurpReqFile(filename string) (reqLine []string, reqH
 	jlog.Debug("请求头:")
 	for data, err := reader.ReadBytes('\n'); err == nil || err == io.EOF; data, err = reader.ReadBytes('\n') {
 		if err == io.EOF {
-			jlog.Fatal("报文格式错误", data)
+			jlog.Error("报文格式错误", data)
 			break
 		}
 		if len(data) == 2 {

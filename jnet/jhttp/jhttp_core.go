@@ -102,10 +102,11 @@ func (hm *httpMsg) SetHeader(header map[string]string) {
 }
 
 // 设置URL，包含querystring
-func (hm *httpMsg) SetURL(requrl string) {
+func (hm *httpMsg) SetURL(requrl string) error{
 	urlobj, err := url.ParseRequestURI(requrl)
 	if err != nil {
-		jlog.Fatal("错误", err)
+		jlog.Error("错误", err)
+		return err
 	}
 	//jlog.Debug(urlobj.Scheme)
 	//jlog.Debug(urlobj.Host)
@@ -126,7 +127,7 @@ func (hm *httpMsg) SetURL(requrl string) {
 	} else {
 		hm.isUseSSL = false
 	}
-
+	return nil
 	//jlog.Debug(hm.reqParams)
 }
 

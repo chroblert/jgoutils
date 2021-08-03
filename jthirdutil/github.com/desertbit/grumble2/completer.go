@@ -25,7 +25,6 @@
 package grumble
 
 import (
-	"github.com/chroblert/jgoutils/jlog"
 	"strings"
 
 	shlex "github.com/desertbit/go-shlex"
@@ -156,7 +155,7 @@ func (c *completer) Do(line []rune, pos int) (newLine [][]rune, length int) {
 			for _,v := range c.commands.list{
 				//jlog.Errorf("%v:%v\n",v.Name,c.currentCommand)
 				if v.Name == c.currentCommand{
-					jlog.Errorf("%v\n",v.flags.list)
+					//jlog.Errorf("%v\n",v.flags.list)
 					for _,v2 := range v.flags.list{
 						suggestions = append(suggestions,[]rune(v2.Long))
 					}

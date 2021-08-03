@@ -15,7 +15,8 @@ import (
 
 func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode int, headers map[string][]string, body []byte, err error)) map[string][]interface{} {
 	if len(hm.intruData.wordFiles) < 1 {
-		jlog.Fatal("请设置至少一个字典文件")
+		jlog.Error("请设置至少一个字典文件")
+		return nil
 	}
 	//reqbytes, _ := ioutil.ReadFile(filename)
 	stringss := [][]string{}
