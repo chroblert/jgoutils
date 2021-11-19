@@ -13,6 +13,7 @@ type Option struct {
 	IsRedirect  bool
 	IsVerifySSL bool
 	HttpVersion int
+	IsKeepAlive bool
 }
 
 // 一个接口
@@ -106,6 +107,13 @@ func SetIsVerifySSL(isverifyssl bool) OptionInterface {
 	})
 }
 
+// 设置connection是否为长连接，keep-alive
+func SetKeepalive(iskeepalive bool) OptionInterface {
+	return newFuncOption(func(o *Option) {
+		o.IsKeepAlive = iskeepalive
+	})
+}
+
 // 获取默认设置
 func getDefaultOptions() Option {
 	return Option{
@@ -119,6 +127,7 @@ func getDefaultOptions() Option {
 		Cookies:     nil,
 		IsRedirect:  jconfig.Conf.RequestsConfig.IsRedirect,
 		IsVerifySSL: jconfig.Conf.RequestsConfig.IsVerifySSL,
+		IsKeepAlive: jconfig.Conf.RequestsConfig.IsKeepAlive,
 		HttpVersion: 1,
 	}
 }

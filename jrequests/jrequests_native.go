@@ -39,10 +39,9 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 
 	// 设置代理
 	var httpTransport *http.Transport
-	var http2Transport *http2.Transport
+	//var http2Transport *http2.Transport
 	httpTransport = &http.Transport{}
-	http2Transport = &http2.Transport{}
-
+	//http2Transport = &http2.Transport{}
 
 	if option.Proxy != "" {
 		proxy2 := func(_ *http.Request) (*url.URL, error) {
@@ -56,9 +55,9 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 		httpTransport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true, // 遇到不安全的https跳过验证
 		}
-		http2Transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true, // 遇到不安全的https跳过验证
-		}
+		//http2Transport.TLSClientConfig = &tls.Config{
+		//	InsecureSkipVerify: true, // 遇到不安全的https跳过验证
+		//}
 	} else {
 		// 判断当前程序运行的目录下是否有cas目录
 		jlog.Debug(jconfig.Conf.RequestsConfig.CAPath)
@@ -80,9 +79,9 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 				httpTransport.TLSClientConfig = &tls.Config{
 					RootCAs: clientCrtPool,
 				}
-				http2Transport.TLSClientConfig = &tls.Config{
-					RootCAs: clientCrtPool,
-				}
+				//http2Transport.TLSClientConfig = &tls.Config{
+				//	RootCAs: clientCrtPool,
+				//}
 			}
 		}
 	}
@@ -95,7 +94,10 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	case 1:
 		client.Transport = httpTransport
 	case 2:
-		client.Transport = http2Transport
+		//client.Transport = http2Transport
+		// 升级到http2
+		http2.ConfigureTransport(httpTransport)
+		client.Transport = httpTransport
 	}
 	// 设置超时
 	if option.Timeout != 0 {
@@ -146,6 +148,9 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	}
 	u, _ := url.Parse(reqUrl)
 	client.Jar.SetCookies(u, cookieList)
+	// 设置是否使用长连接，是否为keep-alive,默认false
+	req.Close = !option.IsKeepAlive
+
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {

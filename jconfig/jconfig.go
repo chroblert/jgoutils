@@ -13,6 +13,7 @@ type requestsConfig struct {
 	CAPath      string
 	IsRedirect  bool
 	IsVerifySSL bool
+	IsKeepAlive bool
 	Timeout     int
 }
 
@@ -185,6 +186,7 @@ func setDefaultConfig() {
 		CAPath:      "conf/cas",
 		IsRedirect:  false,
 		IsVerifySSL: false,
+		IsKeepAlive: false,
 		Timeout:     15,
 	}
 	Conf.AsyncConfig = &asyncConfig{
