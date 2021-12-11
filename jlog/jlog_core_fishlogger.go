@@ -22,7 +22,7 @@ type FishLogger struct {
 	maxStoreDays      int           // 最大保留天数
 	maxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
 	size              int64         // 累计大小 无后缀
-	fullLogFilePath   string        // 文件目录 完整路径 fullLogFilePath=logFileName+logFileExt
+	fullLogFilePath   string        // 文件目录 完整路径 logFullPath=logFileName+logFileExt
 	logFileName       string        // 文件名
 	logFileExt        string        // 文件后缀名 默认 .log
 	createDate        string        // 文件创建日期
@@ -158,7 +158,7 @@ func (fl *FishLogger) printf(lv logLevel, format string, args ...interface{}) {
 		buf = fl.header(lv, 0)
 		//buf.Write(buf2.Bytes())
 	}
-	//buf := fl.header(lv, 0)
+	//buf := fl.header(Lv, 0)
 	fmt.Fprintf(buf, format, args...)
 	// 210518: 不自动追加\n
 	//if buf.Bytes()[buf.Len()-1] != '\n' {
@@ -226,7 +226,7 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer) {
 		}
 	}
 	// 按大小切割
-	//log.Println("文件最大大小", fl.maxSizePerLogFile)
+	//log.Println("文件最大大小", fl.MaxSizePerLogFile)
 	if fl.size+int64(len(data)) >= fl.maxSizePerLogFile {
 		if err := fl.rotate(); err != nil {
 			fl.exit(err)

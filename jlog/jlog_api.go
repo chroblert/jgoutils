@@ -15,19 +15,29 @@ func SetVerbose(b bool) {
 }
 
 // 设置控制台输出
-func SetConsole(b bool) {
-	fishLogger.setConsole(b)
+func SetUseConsole(b bool) {
+	fishLogger.SetUseConsole(b)
 }
 
 // 设置实例等级
 func SetLevel(lv logLevel) {
-	fishLogger.setLevel(lv)
+	fishLogger.SetLogLevel(lv)
 }
 
 // 设置最大保存天数
 // 小于0不删除
 func SetMaxStoreDays(ma int) {
-	fishLogger.setMaxStoreDays(ma)
+	fishLogger.SetMaxStoreDays(ma)
+}
+
+// 设置日志文件保存数量
+func SetLogCount(logCount int) {
+	fishLogger.SetLogCount(logCount)
+}
+
+// 设置文件保存路径
+func SetLogFullPath(logFullPath string) {
+	fishLogger.SetLogFullPath(logFullPath)
 }
 
 // -------- 实例 fishLogger
@@ -71,18 +81,18 @@ func Errorf(format string, args ...interface{}) {
 
 func Fatal(args ...interface{}) {
 	fishLogger.println(FATAL, args...)
-	fishLogger.flush()
+	fishLogger.Flush()
 	os.Exit(0)
 }
 func Fatalf(format string, args ...interface{}) {
 	fishLogger.printf(FATAL, format, args...)
-	fishLogger.flush()
+	fishLogger.Flush()
 	os.Exit(0)
 }
 
 // 写入文件
 func Flush() {
-	fishLogger.flush()
+	fishLogger.Flush()
 }
 
 func NDebug(args ...interface{}) {
@@ -118,11 +128,11 @@ func NErrorf(format string, args ...interface{}) {
 
 func NFatal(args ...interface{}) {
 	fishLogger.nprintln(FATAL, args...)
-	fishLogger.flush()
+	fishLogger.Flush()
 	os.Exit(0)
 }
 func NFatalf(format string, args ...interface{}) {
 	fishLogger.nprintf(FATAL, format, args...)
-	fishLogger.flush()
+	fishLogger.Flush()
 	os.Exit(0)
 }

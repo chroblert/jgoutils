@@ -1,7 +1,6 @@
 package jlog
 
 import (
-	"github.com/chroblert/jgoutils/jconfig"
 	"time"
 )
 
@@ -12,12 +11,12 @@ import (
 //func InitLogs(logpath string, amaxSize int64, amaxAge, alogCount int) {
 //	maxSize = amaxSize // 单个文件最大大小
 //	maxAge = amaxAge   // 单个文件保存2天
-//	logCount = alogCount
+//	LogCount = alogCount
 //	applog = NewLogger(logpath)
-//	defer applog.flush()
-//	applog.setLevel(DEBUG)
+//	defer applog.Flush()
+//	applog.SetLogLevel(DEBUG)
 //	applog.setVerbose(true)
-//	applog.setConsole(true)
+//	applog.SetUseConsole(true)
 //	//applog.info("test")
 //}
 //func Println(args ...interface{}) {
@@ -42,17 +41,47 @@ const (
 )
 
 var (
-	bufferSize          = jconfig.Conf.LogConfig.BufferSize // 256 KB
-	flushInterval       = time.Duration(jconfig.Conf.LogConfig.FlushInterval) * time.Second
-	maxAge              = jconfig.Conf.LogConfig.MaxStoreDays // 180 天
-	maxSize       int64 = jconfig.Conf.LogConfig.MaxSize      // 256 MB
-	logCount            = jconfig.Conf.LogConfig.LogCount
-	fishLogger          = NewLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
+	//BufferSize          = jconfig.Conf.LogConfig.BufferSize // 256 KB
+	//FlushInterval       = time.Duration(jconfig.Conf.LogConfig.FlushInterval) * time.Second
+	//maxAge              = jconfig.Conf.LogConfig.MaxStoreDays // 180 天
+	//maxSize       int64 = jconfig.Conf.LogConfig.MaxSize      // 256 MB
+	//LogCount            = jconfig.Conf.LogConfig.LogCount
+	//fishLogger           = NewLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
+	fishLogger = NewLogger(LogConfig{
+		BufferSize:        2048,
+		FlushInterval:     10 * time.Second,
+		MaxStoreDays:      5,
+		MaxSizePerLogFile: 204800000,
+		LogCount:          5,
+		LogFullPath:       "logs/app.log",
+		Lv:                DEBUG,
+		UseConsole:        true,
+	})
 )
 
+//var jlogConfig = map[string]interface{}{
+//	"BufferSize":2048,
+//	"FlushInterval":10*time.Second,
+//	"MaxStoreDays":5,
+//	"MaxSizePerLogFile":20480000,
+//	"LogCount":5,
+//
+//}
+
+type LogConfig struct {
+	BufferSize        int
+	FlushInterval     time.Duration
+	MaxStoreDays      int
+	MaxSizePerLogFile int64
+	LogCount          int
+	LogFullPath       string
+	Lv                logLevel
+	UseConsole        bool
+}
+
 func init() {
-	SetVerbose(true)
-	SetLevel(logLevel(jconfig.Conf.LogConfig.LV))
-	SetConsole(jconfig.Conf.LogConfig.IsConsole)
+	//SetVerbose(true)
+	//SetLevel(logLevel(jconfig.Conf.LogConfig.LV))
+	//SetConsole(jconfig.Conf.LogConfig.IsConsole)
 	//log.Println("jlog init")
 }

@@ -21,10 +21,13 @@ type FishLogger struct {
 	maxStoreDays      int           // 最大保留天数
 	maxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
 	size              int64         // 累计大小 无后缀
-	fullLogFilePath   string        // 文件目录 完整路径 fullLogFilePath=logFileName+logFileExt
+	logFullPath       string        // 文件目录 完整路径 logFullPath=logFileName+logFileExt
 	logFileName       string        // 文件名
 	logFileExt        string        // 文件后缀名 默认 .log
-	createDate        string        // 文件创建日期
+	logCreateDate     string        // 文件创建日期
+	logCount          int           // 最大保持日志文件的数量
+	flushInterval     time.Duration // 日志写入文件的频率
+	bufferSize        int           // 日志缓存大小
 	level             logLevel      // 输出的日志等级
 	pool              sync.Pool     // Pool
 	mu                sync.Mutex    // logger🔒
@@ -41,7 +44,7 @@ type buffer struct {
 type logLevel int
 
 // 设置输出等级
-func (fl *FishLogger) setLevel(lv logLevel) {
+func (fl *FishLogger) SetLogLevel(lv logLevel) {
 	if lv < DEBUG || lv > FATAL {
 		panic("非法的日志等级")
 	}
@@ -50,16 +53,38 @@ func (fl *FishLogger) setLevel(lv logLevel) {
 	fl.level = lv
 }
 
+// 设置日志文件路径
+func (fl *FishLogger) SetLogFullPath(logFullPath string) {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.logFullPath = logFullPath
+	//日志文件路径设置
+	fl.logFileExt = filepath.Ext(fl.logFullPath)                       // .log
+	fl.logFileName = strings.TrimSuffix(fl.logFullPath, fl.logFileExt) // logs/app
+	if fl.logFileExt == "" {
+		fl.logFileExt = ".log"
+	}
+	os.MkdirAll(filepath.Dir(fl.logFullPath), 0666)
+}
+
 // 设置最大保存天数
 // 小于0不删除
-func (fl *FishLogger) setMaxStoreDays(ma int) {
+func (fl *FishLogger) SetMaxStoreDays(ma int) {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	fl.maxStoreDays = ma
 }
 
+// 设置日志文件最大保存数量
+// 小于0不删除
+func (fl *FishLogger) SetLogCount(logCount int) {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.logCount = logCount
+}
+
 // 写入文件
-func (fl *FishLogger) flush() {
+func (fl *FishLogger) Flush() {
 	//fl.mu.Lock()
 	//defer fl.mu.Unlock()
 	// 锁在flushSync函数中加
@@ -74,7 +99,7 @@ func (fl *FishLogger) setVerbose(b bool) {
 }
 
 // 设置控制台输出
-func (fl *FishLogger) setConsole(b bool) {
+func (fl *FishLogger) SetUseConsole(b bool) {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	fl.console = b
@@ -183,7 +208,7 @@ func (fl *FishLogger) printf(lv logLevel, format string, args ...interface{}) {
 		buf = fl.header(lv, 0)
 		//buf.Write(buf2.Bytes())
 	}
-	//buf := fl.header(lv, 0)
+	//buf := fl.header(Lv, 0)
 	fmt.Fprintf(buf, format, args...)
 	// 210518: 不自动追加\n
 	//if buf.Bytes()[buf.Len()-1] != '\n' {
@@ -249,16 +274,16 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer, isverbose bool) {
 	}
 
 	// 按天切割
-	if fl.createDate != time.Now().Format("2006/01/02") {
+	if fl.logCreateDate != time.Now().Format("2006/01/02") {
 		go fl.delete() // 每天检测一次旧文件
-		//log.Println("lv:",lv,"rotate测试：",fl.createDate,"string(data[0:10]):",string(data[0:10]),"_")
+		//log.Println("Lv:",Lv,"rotate测试：",fl.logCreateDate,"string(data[0:10]):",string(data[0:10]),"_")
 		if err := fl.rotate(); err != nil {
 			fl.exit(err)
 		}
 	}
 
 	// 按大小切割
-	//log.Println("文件最大大小", fl.maxSizePerLogFile)
+	//log.Println("文件最大大小", fl.MaxSizePerLogFile)
 	if fl.size+int64(len(data)) >= fl.maxSizePerLogFile {
 		if err := fl.rotate(); err != nil {
 			fl.exit(err)
@@ -278,7 +303,7 @@ func (fl *FishLogger) delete() {
 	if fl.maxStoreDays < 0 {
 		return
 	}
-	dir := filepath.Dir(fl.fullLogFilePath)
+	dir := filepath.Dir(fl.logFullPath)
 	fakeNow := time.Now().AddDate(0, 0, -fl.maxStoreDays)
 	filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 		defer func() {
@@ -300,19 +325,19 @@ func (fl *FishLogger) delete() {
 
 // 定时写入文件，监测到Ctrl+C时写入文件
 func (fl *FishLogger) daemon(stopChannel chan os.Signal) {
-	tickTimer := time.NewTicker(flushInterval)
+	tickTimer := time.NewTicker(fl.flushInterval)
 	for {
 		select {
 		case <-tickTimer.C:
-			fl.flush()
+			fl.Flush()
 		case <-stopChannel:
 			//fmt.Println("监测到信号")
-			fl.flush()
+			fl.Flush()
 			//fmt.Println("结束")
 		}
 	}
-	//for range time.NewTicker(flushInterval).C {
-	//	fl.flush()
+	//for range time.NewTicker(FlushInterval).C {
+	//	fl.Flush()
 	//}
 }
 
@@ -359,56 +384,56 @@ func (fl *FishLogger) rotate() error {
 		}
 		// 对日志文件进行重命名
 		fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
-		err = os.Rename(fl.fullLogFilePath, fileBackupName)
+		err = os.Rename(fl.logFullPath, fileBackupName)
 		if err != nil {
 			//log.Println("rename", err)
 			return err
 		}
 		// 创建新日志文件app.log
-		newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		newLogFile, err := os.OpenFile(fl.logFullPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			return err
 		}
 		fl.file = newLogFile
 		fl.size = 0
 		// 日志缓存
-		fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
+		fl.writer = bufio.NewWriterSize(fl.file, fl.bufferSize)
 	} else if fl.file == nil {
 		// 对于第一次写入文件
 		// 判断是否存在app.log日志文件，若存在则重命名
-		_, err := os.Stat(fl.fullLogFilePath)
+		_, err := os.Stat(fl.logFullPath)
 		if err == nil {
 			// 获取当前日志文件的创建日期
 			// 对日志文件进行重命名
 			fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
-			err = os.Rename(fl.fullLogFilePath, fileBackupName)
+			err = os.Rename(fl.logFullPath, fileBackupName)
 			if err != nil {
 				//log.Println("rename", err)
 				return err
 			}
 		}
 		// 创建新日志文件app.log
-		newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		newLogFile, err := os.OpenFile(fl.logFullPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			return err
 		}
 		fl.file = newLogFile
 		fl.size = 0
 		// 日志缓存
-		fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
+		fl.writer = bufio.NewWriterSize(fl.file, fl.bufferSize)
 	}
-	fileInfo, err := os.Stat(fl.fullLogFilePath)
-	fl.createDate = now.Format("2006/01/02")
+	fileInfo, err := os.Stat(fl.logFullPath)
+	fl.logCreateDate = now.Format("2006/01/02")
 	if err == nil {
 		// 获取当前日志文件的大小
 		fl.size = fileInfo.Size()
 		// 获取当前日志文件的创建日期
-		fl.createDate = fileInfo.ModTime().Format("2006/01/02")
+		fl.logCreateDate = fileInfo.ModTime().Format("2006/01/02")
 	}
-	//fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
+	//fl.writer = bufio.NewWriterSize(fl.file, BufferSize)
 	// 日志文件的个数不能超过logCount个，若超过，则刪除最先创建的日志文件
 	pattern := fl.logFileName + ".*" + fl.logFileExt
-	for files, _ := filepath.Glob(pattern); len(files) > logCount; files, _ = filepath.Glob(pattern) {
+	for files, _ := filepath.Glob(pattern); len(files) > fl.logCount; files, _ = filepath.Glob(pattern) {
 		// 删除log文件
 		os.Remove(files[0])
 		if fl.level == -1 {
@@ -428,43 +453,128 @@ func (fl *FishLogger) rotate() error {
 
 // -------- 实例 自定义
 
-func (fl *FishLogger) debug(args ...interface{}) {
+//func (fl *FishLogger) debug(args ...interface{}) {
+//	fl.println(DEBUG, args...)
+//}
+//
+//func (fl *FishLogger) debugf(format string, args ...interface{}) {
+//	fl.printf(DEBUG, format, args...)
+//}
+//func (fl *FishLogger) info(args ...interface{}) {
+//	fl.println(INFO, args...)
+//}
+//
+//func (fl *FishLogger) infof(format string, args ...interface{}) {
+//	fl.printf(INFO, format, args...)
+//}
+//
+//func (fl *FishLogger) warn(args ...interface{}) {
+//	fl.println(WARN, args...)
+//}
+//
+//func (fl *FishLogger) warnf(format string, args ...interface{}) {
+//	fl.printf(WARN, format, args...)
+//}
+//
+//func (fl *FishLogger) error(args ...interface{}) {
+//	fl.println(ERROR, args...)
+//}
+//
+//func (fl *FishLogger) errorf(format string, args ...interface{}) {
+//	fl.printf(ERROR, format, args...)
+//}
+//
+//func (fl *FishLogger) fatal(args ...interface{}) {
+//	fl.println(FATAL, args...)
+//	os.Exit(0)
+//}
+//
+//func (fl *FishLogger) fatalf(format string, args ...interface{}) {
+//	fl.printf(FATAL, format, args...)
+//	os.Exit(0)
+//}
+
+// 用户自行实例化
+func (fl *FishLogger) Debug(args ...interface{}) {
 	fl.println(DEBUG, args...)
 }
 
-func (fl *FishLogger) debugf(format string, args ...interface{}) {
+func (fl *FishLogger) Debugf(format string, args ...interface{}) {
 	fl.printf(DEBUG, format, args...)
 }
-func (fl *FishLogger) info(args ...interface{}) {
+func (fl *FishLogger) Info(args ...interface{}) {
 	fl.println(INFO, args...)
 }
 
-func (fl *FishLogger) infof(format string, args ...interface{}) {
+func (fl *FishLogger) Infof(format string, args ...interface{}) {
 	fl.printf(INFO, format, args...)
 }
 
-func (fl *FishLogger) warn(args ...interface{}) {
+func (fl *FishLogger) Warn(args ...interface{}) {
 	fl.println(WARN, args...)
 }
 
-func (fl *FishLogger) warnf(format string, args ...interface{}) {
+func (fl *FishLogger) Warnf(format string, args ...interface{}) {
 	fl.printf(WARN, format, args...)
 }
 
-func (fl *FishLogger) error(args ...interface{}) {
+func (fl *FishLogger) Error(args ...interface{}) {
 	fl.println(ERROR, args...)
 }
 
-func (fl *FishLogger) errorf(format string, args ...interface{}) {
+func (fl *FishLogger) Errorf(format string, args ...interface{}) {
 	fl.printf(ERROR, format, args...)
 }
 
-func (fl *FishLogger) fatal(args ...interface{}) {
+func (fl *FishLogger) Fatal(args ...interface{}) {
 	fl.println(FATAL, args...)
 	os.Exit(0)
 }
 
-func (fl *FishLogger) fatalf(format string, args ...interface{}) {
+func (fl *FishLogger) Fatalf(format string, args ...interface{}) {
 	fl.printf(FATAL, format, args...)
+	os.Exit(0)
+}
+
+// Nxxxx
+
+func (fl *FishLogger) NDebug(args ...interface{}) {
+	fl.nprintln(DEBUG, args...)
+}
+
+func (fl *FishLogger) NDebugf(format string, args ...interface{}) {
+	fl.nprintf(DEBUG, format, args...)
+}
+func (fl *FishLogger) NInfo(args ...interface{}) {
+	fl.nprintln(INFO, args...)
+}
+
+func (fl *FishLogger) NInfof(format string, args ...interface{}) {
+	fl.nprintf(INFO, format, args...)
+}
+
+func (fl *FishLogger) NWarn(args ...interface{}) {
+	fl.nprintln(WARN, args...)
+}
+
+func (fl *FishLogger) NWarnf(format string, args ...interface{}) {
+	fl.nprintf(WARN, format, args...)
+}
+
+func (fl *FishLogger) NError(args ...interface{}) {
+	fl.nprintln(ERROR, args...)
+}
+
+func (fl *FishLogger) NErrorf(format string, args ...interface{}) {
+	fl.nprintf(ERROR, format, args...)
+}
+
+func (fl *FishLogger) NFatal(args ...interface{}) {
+	fl.nprintln(FATAL, args...)
+	os.Exit(0)
+}
+
+func (fl *FishLogger) NFatalf(format string, args ...interface{}) {
+	fl.nprintf(FATAL, format, args...)
 	os.Exit(0)
 }

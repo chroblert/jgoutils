@@ -4,13 +4,13 @@ package jlog
 //type FishLogger struct {
 //	console           bool          // 标准输出  默认 false
 //	verbose           bool          // 是否输出行号和文件名 默认 false
-//	maxStoreDays      int           // 最大保留天数
-//	maxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
+//	MaxStoreDays      int           // 最大保留天数
+//	MaxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
 //	size              int64         // 累计大小 无后缀
-//	fullLogFilePath   string        // 文件目录 完整路径 fullLogFilePath=logFileName+logFileExt
+//	LogFullPath   string        // 文件目录 完整路径 LogFullPath=logFileName+logFileExt
 //	logFileName       string        // 文件名
 //	logFileExt        string        // 文件后缀名 默认 .log
-//	createDate        string        // 文件创建日期
+//	logCreateDate        string        // 文件创建日期
 //	level             logLevel      // 输出的日志等级
 //	pool              sync.Pool     // Pool
 //	mu                sync.Mutex    // logger🔒

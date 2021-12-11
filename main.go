@@ -5,8 +5,7 @@ import (
 	"github.com/chroblert/jgoutils/jlog"
 	"os"
 	"strconv"
-
-	//_ "github.com/chroblert/jgoutils/jtest"
+	//_ "github.com/chroblert/jgoutils/jlog_test"
 	//_ "github.com/chroblert/jgoutils/jnet/jintruder"
 )
 
@@ -178,18 +177,18 @@ func main() {
 	//jasyncobj.Clean()
 	//jtcpobj.CloseHandle()
 
-	rate,_ := strconv.Atoi(os.Args[3])
-	portScan(os.Args[1],os.Args[2],rate)
+	rate, _ := strconv.Atoi(os.Args[3])
+	portScan(os.Args[1], os.Args[2], rate)
 }
 
-func print(port string, status string, err error){
-	if status == "open"{
-		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
+func print(port string, status string, err error) {
+	if status == "open" {
+		jlog.Infof("%v : _%v_,%v\n", port, status, status == "open")
 	}
-	if port == "56263"{
-		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
+	if port == "56263" {
+		jlog.Infof("%v : _%v_,%v\n", port, status, status == "open")
 	}
-	if port == "22"{
-		jlog.Infof("%v : _%v_,%v\n",port,status,status == "open")
+	if port == "22" {
+		jlog.Infof("%v : _%v_,%v\n", port, status, status == "open")
 	}
 }
