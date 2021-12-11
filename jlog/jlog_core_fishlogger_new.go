@@ -2,16 +2,43 @@ package jlog
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"sync"
 	//"github.com/fatih/color"
 	"github.com/chroblert/jgoutils/jthirdutil/color"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 )
+
+// 定义FishLogger结构体
+type FishLogger struct {
+	console           bool          // 标准输出  默认 false
+	verbose           bool          // 是否输出行号和文件名 默认 false
+	maxStoreDays      int           // 最大保留天数
+	maxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
+	size              int64         // 累计大小 无后缀
+	fullLogFilePath   string        // 文件目录 完整路径 fullLogFilePath=logFileName+logFileExt
+	logFileName       string        // 文件名
+	logFileExt        string        // 文件后缀名 默认 .log
+	createDate        string        // 文件创建日期
+	level             logLevel      // 输出的日志等级
+	pool              sync.Pool     // Pool
+	mu                sync.Mutex    // logger🔒
+	writer            *bufio.Writer // 缓存io 缓存到文件
+	file              *os.File      // 日志文件
+}
+
+type buffer struct {
+	temp [64]byte
+	bytes.Buffer
+}
+
+// 日志等级
+type logLevel int
 
 // 设置输出等级
 func (fl *FishLogger) setLevel(lv logLevel) {
@@ -33,8 +60,9 @@ func (fl *FishLogger) setMaxStoreDays(ma int) {
 
 // 写入文件
 func (fl *FishLogger) flush() {
-	fl.mu.Lock()
-	defer fl.mu.Unlock()
+	//fl.mu.Lock()
+	//defer fl.mu.Unlock()
+	// 锁在flushSync函数中加
 	fl.flushSync()
 }
 
@@ -112,7 +140,32 @@ func (fl *FishLogger) println(lv logLevel, args ...interface{}) {
 	}
 	fmt.Fprintln(buf, args...)
 	// 将日志缓存写入到文件中
-	fl.write(lv, buf)
+	fl.write(lv, buf, true)
+}
+
+// 换行输出
+// 不带具体日期时间、文件名、行号等信息
+func (fl *FishLogger) nprintln(lv logLevel, args ...interface{}) {
+	if lv < fl.level {
+		return
+	}
+	var buf *buffer
+	buf = &buffer{}
+	fmt.Fprintln(buf, args...)
+	// 将日志缓存写入到文件中
+	fl.write(lv, buf, false)
+}
+
+// 格式输出
+// 不带具体日期时间、文件名、行号等信息
+func (fl *FishLogger) nprintf(lv logLevel, format string, args ...interface{}) {
+	if lv < fl.level {
+		return
+	}
+	var buf *buffer
+	buf = &buffer{}
+	fmt.Fprintf(buf, format, args...)
+	fl.write(lv, buf, false)
 }
 
 // 格式输出
@@ -139,11 +192,12 @@ func (fl *FishLogger) printf(lv logLevel, format string, args ...interface{}) {
 	// 210603: 自动追加\x1b[K  清除从光标位置到行尾的所有字符
 	//buf.WriteByte('\x1b[K')
 	//buf.Write([]byte("\x1b[K"))
-	fl.write(lv, buf)
+	fl.write(lv, buf, true)
 }
 
 // 写入数据
-func (fl *FishLogger) write(lv logLevel, buf *buffer) {
+// isverbose: buf中是否有带有具体日期时间及文件名行号这些信息
+func (fl *FishLogger) write(lv logLevel, buf *buffer, isverbose bool) {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	data := buf.Bytes()
@@ -193,15 +247,13 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer) {
 			fl.exit(err)
 		}
 	}
-	// 自定义的一个loglevel，开头没有日期
-	if lv != 11{
-		// 按天切割
-		if fl.createDate != string(data[0:10]) {
-			go fl.delete() // 每天检测一次旧文件
-			log.Println("lv:",lv,"rotate测试：",fl.createDate,"string(data[0:10]):",string(data[0:10]),"_")
-			if err := fl.rotate(); err != nil {
-				fl.exit(err)
-			}
+
+	// 按天切割
+	if fl.createDate != time.Now().Format("2006/01/02") {
+		go fl.delete() // 每天检测一次旧文件
+		//log.Println("lv:",lv,"rotate测试：",fl.createDate,"string(data[0:10]):",string(data[0:10]),"_")
+		if err := fl.rotate(); err != nil {
+			fl.exit(err)
 		}
 	}
 
@@ -239,21 +291,36 @@ func (fl *FishLogger) delete() {
 		}
 		// 防止误删
 		if !info.IsDir() && info.ModTime().Before(fakeNow) && strings.HasSuffix(info.Name(), fl.logFileExt) {
-			os.Remove(fpath)
+			return os.Remove(fpath)
+
 		}
 		return nil
 	})
 }
 
-// 定时写入文件
-func (fl *FishLogger) daemon() {
-	for range time.NewTicker(flushInterval).C {
-		fl.flush()
+// 定时写入文件，监测到Ctrl+C时写入文件
+func (fl *FishLogger) daemon(stopChannel chan os.Signal) {
+	tickTimer := time.NewTicker(flushInterval)
+	for {
+		select {
+		case <-tickTimer.C:
+			fl.flush()
+		case <-stopChannel:
+			//fmt.Println("监测到信号")
+			fl.flush()
+			//fmt.Println("结束")
+		}
 	}
+	//for range time.NewTicker(flushInterval).C {
+	//	fl.flush()
+	//}
 }
 
-// 不能锁
+// 写入到文件
 func (fl *FishLogger) flushSync() {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	//fmt.Println("写入文件")
 	if fl.file != nil {
 		fl.writer.Flush() // 写入底层数据.写入到内存中
 		fl.file.Sync()    // 同步到磁盘.Sync递交文件的当前内容进行稳定的存储。
@@ -287,13 +354,15 @@ func (fl *FishLogger) rotate() error {
 		// 关闭文件
 		err := fl.file.Close()
 		if err != nil {
-			log.Println("fl.file", err)
+			//log.Println("fl.file", err)
+			return err
 		}
 		// 对日志文件进行重命名
 		fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
 		err = os.Rename(fl.fullLogFilePath, fileBackupName)
 		if err != nil {
-			log.Println("rename", err)
+			//log.Println("rename", err)
+			return err
 		}
 		// 创建新日志文件app.log
 		newLogFile, err := os.OpenFile(fl.fullLogFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
@@ -304,7 +373,7 @@ func (fl *FishLogger) rotate() error {
 		fl.size = 0
 		// 日志缓存
 		fl.writer = bufio.NewWriterSize(fl.file, bufferSize)
-	}else if fl.file == nil{
+	} else if fl.file == nil {
 		// 对于第一次写入文件
 		// 判断是否存在app.log日志文件，若存在则重命名
 		_, err := os.Stat(fl.fullLogFilePath)
@@ -314,7 +383,8 @@ func (fl *FishLogger) rotate() error {
 			fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
 			err = os.Rename(fl.fullLogFilePath, fileBackupName)
 			if err != nil {
-				log.Println("rename", err)
+				//log.Println("rename", err)
+				return err
 			}
 		}
 		// 创建新日志文件app.log
@@ -341,7 +411,7 @@ func (fl *FishLogger) rotate() error {
 	for files, _ := filepath.Glob(pattern); len(files) > logCount; files, _ = filepath.Glob(pattern) {
 		// 删除log文件
 		os.Remove(files[0])
-		if fl.level == DEBUG {
+		if fl.level == -1 {
 			tmpBuffer := fl.header(DEBUG, 0)
 			fmt.Fprintf(tmpBuffer, "删除旧日志文件")
 			fmt.Fprintf(tmpBuffer, files[0])

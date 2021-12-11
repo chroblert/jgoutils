@@ -1,6 +1,12 @@
 package jlog
 
-import "os"
+import (
+	"os"
+)
+
+func init() {
+	//log.Println("jlog api")
+}
 
 // 设置
 
@@ -26,11 +32,12 @@ func SetMaxStoreDays(ma int) {
 
 // -------- 实例 fishLogger
 func Println(args ...interface{}) {
-	fishLogger.println(11, args...)
+	fishLogger.nprintln(DEBUG, args...)
 }
 func Printf(format string, args ...interface{}) {
-	fishLogger.printf(11, format, args...)
+	fishLogger.nprintf(DEBUG, format, args...)
 }
+
 func Debug(args ...interface{}) {
 	fishLogger.println(DEBUG, args...)
 }
@@ -73,9 +80,49 @@ func Fatalf(format string, args ...interface{}) {
 	os.Exit(0)
 }
 
-
 // 写入文件
 func Flush() {
 	fishLogger.flush()
 }
 
+func NDebug(args ...interface{}) {
+	fishLogger.nprintln(DEBUG, args...)
+}
+
+func NDebugf(format string, args ...interface{}) {
+	fishLogger.nprintf(DEBUG, format, args...)
+}
+func NInfo(args ...interface{}) {
+	fishLogger.nprintln(INFO, args...)
+}
+
+func NInfof(format string, args ...interface{}) {
+	fishLogger.nprintf(INFO, format, args...)
+}
+
+func NWarn(args ...interface{}) {
+	fishLogger.nprintln(WARN, args...)
+}
+
+func NWarnf(format string, args ...interface{}) {
+	fishLogger.nprintf(WARN, format, args...)
+}
+
+func NError(args ...interface{}) {
+	fishLogger.nprintln(ERROR, args...)
+}
+
+func NErrorf(format string, args ...interface{}) {
+	fishLogger.nprintf(ERROR, format, args...)
+}
+
+func NFatal(args ...interface{}) {
+	fishLogger.nprintln(FATAL, args...)
+	fishLogger.flush()
+	os.Exit(0)
+}
+func NFatalf(format string, args ...interface{}) {
+	fishLogger.nprintf(FATAL, format, args...)
+	fishLogger.flush()
+	os.Exit(0)
+}

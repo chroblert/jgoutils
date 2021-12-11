@@ -13,7 +13,7 @@
     "taskMaxLimit": 10000
   },
   "logConfig": {
-    "lv": 1,
+    "lv": 0,
     "isConsole": true,
     "maxStoreDays": 5,
     "maxSize": 20480000,

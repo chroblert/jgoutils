@@ -1,38 +1,16 @@
 package jlog
 
 import (
-	"github.com/chroblert/jgoutils/jconfig"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
-)
-
-const (
-	DEBUG logLevel = iota
-	INFO
-	WARN
-	ERROR
-	FATAL
-
-	digits   = "0123456789"
-	logShort = "[D][I][W][E][F]"
-)
-
-var (
-	bufferSize          = jconfig.Conf.LogConfig.BufferSize // 256 KB
-	flushInterval       = time.Duration(jconfig.Conf.LogConfig.FlushInterval) * time.Second
-	maxAge              = jconfig.Conf.LogConfig.MaxStoreDays // 180 天
-	maxSize       int64 = jconfig.Conf.LogConfig.MaxSize      // 256 MB
-	logCount            = jconfig.Conf.LogConfig.LogCount
-	fishLogger          = NewLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
+	"syscall"
 )
 
 func init() {
-	SetVerbose(true)
-	SetLevel(logLevel(jconfig.Conf.LogConfig.LV))
-	SetConsole(jconfig.Conf.LogConfig.IsConsole)
+	//log.Println("jlog core")
 }
 
 // 字符串等级
@@ -62,6 +40,8 @@ func NewLogger(fullPath string) *FishLogger {
 			return new(buffer)
 		},
 	}
-	go fl.daemon()
+	siganlChannel := make(chan os.Signal, 1)
+	go fl.daemon(siganlChannel)
+	signal.Notify(siganlChannel, syscall.SIGINT, syscall.SIGTERM)
 	return fl
 }
