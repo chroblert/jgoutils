@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/chroblert/jgoutils/jconfig"
 	"github.com/chroblert/jgoutils/jfile"
-	"github.com/chroblert/jgoutils/jlog"
 	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
@@ -60,21 +58,25 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 		//}
 	} else {
 		// 判断当前程序运行的目录下是否有cas目录
-		jlog.Debug(jconfig.Conf.RequestsConfig.CAPath)
-		if isExsit, _ := jfile.PathExists(jconfig.Conf.RequestsConfig.CAPath); isExsit {
+		//jlog.Debug(jconfig.Conf.RequestsConfig.CAPath)
+		//if isExsit, _ := jfile.PathExists(jconfig.Conf.RequestsConfig.CAPath); isExsit {
+		if isExsit, _ := jfile.PathExists(option.CAPath); isExsit {
 			// 枚举当前目录下的文件
-			filenams, _ := jfile.GetFilenamesByDir(jconfig.Conf.RequestsConfig.CAPath)
+			filenams, _ := jfile.GetFilenamesByDir(option.CAPath)
 			if len(filenams) > 0 {
 				var clientCrtPool *x509.CertPool
 				if clientCrtPool, err = x509.SystemCertPool(); err != nil {
-					jlog.Error(err)
 					clientCrtPool = x509.NewCertPool()
 				}
 				for _, filename := range filenams {
-					jlog.Debug(filename)
-					jlog.Debug("导入ca证书:", filename)
-					caCrt, _ := ioutil.ReadFile(filename)
-					jlog.Debug("导入证书结果:", clientCrtPool.AppendCertsFromPEM(caCrt))
+					//jlog.Debug(filename)
+					//jlog.Debug("导入ca证书:", filename)
+					caCrt, err := ioutil.ReadFile(filename)
+					if err != nil {
+						return -1, nil, nil, err
+					}
+					//jlog.Debug("导入证书结果:", clientCrtPool.AppendCertsFromPEM(caCrt))
+					clientCrtPool.AppendCertsFromPEM(caCrt)
 				}
 				httpTransport.TLSClientConfig = &tls.Config{
 					RootCAs: clientCrtPool,
@@ -119,7 +121,7 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	}
 	req, err = http.NewRequest(method, reqUrl, reader)
 	if err != nil {
-		jlog.Error("http.NewRequest,error: ", err)
+		//jlog.Error("http.NewRequest,error: ", err)
 		return -1, nil, nil, err
 
 	}
@@ -154,14 +156,14 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
-		jlog.Error("client.Do,error: ", err)
+		//jlog.Error("client.Do,error: ", err)
 		return -1, nil, nil, err
 
 	}
 	defer resp.Body.Close()
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		jlog.Error("ioutil.ReadAll,error: ", err)
+		//jlog.Error("ioutil.ReadAll,error: ", err)
 		return -1, nil, nil, err
 
 	}

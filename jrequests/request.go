@@ -1,7 +1,5 @@
 package jrequests
 
-import "github.com/chroblert/jgoutils/jconfig"
-
 // 请求选项的结构体
 type Option struct {
 	Proxy       string
@@ -14,6 +12,7 @@ type Option struct {
 	IsVerifySSL bool
 	HttpVersion int
 	IsKeepAlive bool
+	CAPath      string
 }
 
 // 一个接口
@@ -114,20 +113,28 @@ func SetKeepalive(iskeepalive bool) OptionInterface {
 	})
 }
 
+// 设置capath
+func SetCAPath(CAPath string) OptionInterface {
+	return newFuncOption(func(o *Option) {
+		o.CAPath = CAPath
+	})
+}
+
 // 获取默认设置
 func getDefaultOptions() Option {
 	return Option{
-		Proxy:   jconfig.Conf.RequestsConfig.Proxy,
-		Timeout: jconfig.Conf.RequestsConfig.Timeout,
+		Proxy:   "",
+		Timeout: 15,
 		Headers: map[string]string{
 			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0",
 		},
 		Data:        nil,
 		Params:      nil,
 		Cookies:     nil,
-		IsRedirect:  jconfig.Conf.RequestsConfig.IsRedirect,
-		IsVerifySSL: jconfig.Conf.RequestsConfig.IsVerifySSL,
-		IsKeepAlive: jconfig.Conf.RequestsConfig.IsKeepAlive,
+		IsRedirect:  false,
+		IsVerifySSL: false,
+		IsKeepAlive: false,
 		HttpVersion: 1,
+		CAPath:      "cas",
 	}
 }
