@@ -92,7 +92,10 @@ func Fatalf(format string, args ...interface{}) {
 
 // 写入文件
 func Flush() {
+	//fmt.Println("size1:",fishLogger.writer.Buffered())
 	fishLogger.Flush()
+	//fmt.Println("size2:",fishLogger.writer.Size())
+
 }
 
 func NDebug(args ...interface{}) {

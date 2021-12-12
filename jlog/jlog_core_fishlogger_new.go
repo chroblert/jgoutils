@@ -336,6 +336,7 @@ func (fl *FishLogger) daemon(stopChannel chan os.Signal) {
 			//fmt.Println("结束")
 		}
 	}
+
 	//for range time.NewTicker(FlushInterval).C {
 	//	fl.Flush()
 	//}
