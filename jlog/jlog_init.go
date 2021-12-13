@@ -56,6 +56,7 @@ var (
 		LogFullPath:       "logs/app.log",
 		Lv:                DEBUG,
 		UseConsole:        true,
+		Verbose:           true,
 	})
 )
 
@@ -77,6 +78,7 @@ type LogConfig struct {
 	LogFullPath       string
 	Lv                logLevel
 	UseConsole        bool
+	Verbose           bool
 }
 
 func init() {

@@ -1,7 +1,6 @@
 package jfile
 
 import (
-	"github.com/chroblert/jgoutils/jlog"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,7 +10,7 @@ import (
 
 func PathExists(path string) (bool, error) {
 	path = getAbsPath(path)
-	jlog.Debug(path)
+	//jlog.Debug(path)
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil

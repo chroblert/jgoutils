@@ -5,6 +5,7 @@ import (
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jlog_test/test1"
 	"github.com/chroblert/jgoutils/jlog_test/test2"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -51,8 +52,9 @@ func main() {
 	for i := 0; i < 100000; i++ {
 		wg.Add(1)
 		go func(t int) {
-			jlog2.Debug("jlog2", t)
+			//jlog2.Debug("jlog2", t)
 			//fmt.Println("fmt1",i)
+			log.Println(t)
 			wg.Done()
 		}(i)
 	}

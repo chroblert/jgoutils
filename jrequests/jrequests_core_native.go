@@ -31,72 +31,55 @@ import (
 :return body: 响应体
 */
 //func SingleReq(method, reqUrl string,cookies map[string]string,headers map[string]string,proxy string,data []byte,params map[string]string, isredirect bool,timeout int)(statuscode int,respheaders map[string][]string,body []byte,err error){
-func SingleReq(method, reqUrl string, option Option) (statuscode int, respheaders map[string][]string, body []byte, err error) {
+func SingleReq(method, reqUrl string, option Option) (resp *http.Response, err error) {
 	var client *http.Client
 	client = &http.Client{}
-
-	// 设置代理
 	var httpTransport *http.Transport
-	//var http2Transport *http2.Transport
 	httpTransport = &http.Transport{}
-	//http2Transport = &http2.Transport{}
-
+	//var http2Transport *http2.transport
+	//http2Transport = &http2.transport{}
+	// 设置代理
 	if option.Proxy != "" {
 		proxy2 := func(_ *http.Request) (*url.URL, error) {
 			return url.Parse(option.Proxy)
 		}
 		httpTransport.Proxy = proxy2
 	}
-	// 设置是否验证ssl
+	// 设置是否验证服务端证书
 	if !option.IsVerifySSL {
-		//jlog.Info("jinlaiyaxxxxxx")
 		httpTransport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true, // 遇到不安全的https跳过验证
 		}
-		//http2Transport.TLSClientConfig = &tls.Config{
-		//	InsecureSkipVerify: true, // 遇到不安全的https跳过验证
-		//}
 	} else {
+		var rootCAPool *x509.CertPool
+		if rootCAPool, err = x509.SystemCertPool(); err != nil {
+			rootCAPool = x509.NewCertPool()
+		}
 		// 判断当前程序运行的目录下是否有cas目录
-		//jlog.Debug(jconfig.Conf.RequestsConfig.CAPath)
-		//if isExsit, _ := jfile.PathExists(jconfig.Conf.RequestsConfig.CAPath); isExsit {
+		// 根证书，用来验证服务端证书的ca
 		if isExsit, _ := jfile.PathExists(option.CAPath); isExsit {
 			// 枚举当前目录下的文件
-			filenams, _ := jfile.GetFilenamesByDir(option.CAPath)
-			if len(filenams) > 0 {
-				var clientCrtPool *x509.CertPool
-				if clientCrtPool, err = x509.SystemCertPool(); err != nil {
-					clientCrtPool = x509.NewCertPool()
-				}
-				for _, filename := range filenams {
-					//jlog.Debug(filename)
-					//jlog.Debug("导入ca证书:", filename)
+			caFilenames, _ := jfile.GetFilenamesByDir(option.CAPath)
+			if len(caFilenames) > 0 {
+				for _, filename := range caFilenames {
 					caCrt, err := ioutil.ReadFile(filename)
 					if err != nil {
-						return -1, nil, nil, err
+						return nil, err
 					}
-					//jlog.Debug("导入证书结果:", clientCrtPool.AppendCertsFromPEM(caCrt))
-					clientCrtPool.AppendCertsFromPEM(caCrt)
+					//jlog.Debug("导入证书结果:", rootCAPool.AppendCertsFromPEM(caCrt))
+					rootCAPool.AppendCertsFromPEM(caCrt)
 				}
-				httpTransport.TLSClientConfig = &tls.Config{
-					RootCAs: clientCrtPool,
-				}
-				//http2Transport.TLSClientConfig = &tls.Config{
-				//	RootCAs: clientCrtPool,
-				//}
 			}
+		}
+		httpTransport.TLSClientConfig = &tls.Config{
+			RootCAs: rootCAPool,
 		}
 	}
 	// 设置httptransport
-	//if httpTransport != nil {
-	//	//jlog.Debug("使用httptransport:",httpTransport.TLSClientConfig)
-	//	client.Transport = httpTransport
-	//}
 	switch option.HttpVersion {
 	case 1:
 		client.Transport = httpTransport
 	case 2:
-		//client.Transport = http2Transport
 		// 升级到http2
 		http2.ConfigureTransport(httpTransport)
 		client.Transport = httpTransport
@@ -112,7 +95,6 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 		}
 	}
 	var req *http.Request
-	// setting request body
 	var reader io.Reader
 	if option.Data != nil {
 		reader = bytes.NewReader(option.Data)
@@ -122,8 +104,7 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 	req, err = http.NewRequest(method, reqUrl, reader)
 	if err != nil {
 		//jlog.Error("http.NewRequest,error: ", err)
-		return -1, nil, nil, err
-
+		return nil, err
 	}
 	// setting request params
 	if option.Params != nil {
@@ -148,29 +129,27 @@ func SingleReq(method, reqUrl string, option Option) (statuscode int, respheader
 			cookieList = append(cookieList, &http.Cookie{Name: cookieKey, Value: cookieValue})
 		}
 	}
-	u, _ := url.Parse(reqUrl)
+	u, err := url.Parse(reqUrl)
+	if err != nil {
+		return nil, err
+	}
 	client.Jar.SetCookies(u, cookieList)
 	// 设置是否使用长连接，是否为keep-alive,默认false
 	req.Close = !option.IsKeepAlive
-
 	// 发送请求
-	resp, err := client.Do(req)
-	if err != nil {
-		//jlog.Error("client.Do,error: ", err)
-		return -1, nil, nil, err
-
-	}
-	defer resp.Body.Close()
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		//jlog.Error("ioutil.ReadAll,error: ", err)
-		return -1, nil, nil, err
-
-	}
-	//fmt.Printf(resp.Header)
-	//fmt.Println(resp.StatusCode)
-	//for k,v := range resp.Header{
-	//	fmt.Println(k,":",v)
+	resp, err = client.Do(req)
+	return resp, err
+	//if err != nil {
+	//	//jlog.Error("client.Do,error: ", err)
+	//	return -1, nil, nil, err
+	//
 	//}
-	return resp.StatusCode, resp.Header, body, nil
+	//defer resp.Body.Close()
+	//body, err = ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	//jlog.Error("ioutil.ReadAll,error: ", err)
+	//	return -1, nil, nil, err
+	//
+	//}
+	//return resp.StatusCode, resp.Header, body, nil
 }
