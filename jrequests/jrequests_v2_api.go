@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func A_Get(reqUrl string, d ...interface{}) (jre *jrequest) {
+func CGet(reqUrl string, d ...interface{}) (jre *jrequest) {
 	var err error
 	jre, err = New()
 	if err != nil {
@@ -65,7 +65,7 @@ func A_Get(reqUrl string, d ...interface{}) (jre *jrequest) {
 	return
 }
 
-func A_Post(reqUrl string, d ...interface{}) (jre *jrequest) {
+func CPost(reqUrl string, d ...interface{}) (jre *jrequest) {
 	var err error
 	jre, err = New()
 	if err != nil {
@@ -118,7 +118,7 @@ func A_Post(reqUrl string, d ...interface{}) (jre *jrequest) {
 }
 
 // 设置代理
-func (jr *jrequest) A_SetProxy(proxy string) (jre *jrequest) {
+func (jr *jrequest) CSetProxy(proxy string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (jr *jrequest) A_SetProxy(proxy string) (jre *jrequest) {
 }
 
 // 设置超时
-func (jr *jrequest) A_SetTimeout(timeout int) (jre *jrequest) {
+func (jr *jrequest) CSetTimeout(timeout int) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -151,7 +151,7 @@ func (jr *jrequest) A_SetTimeout(timeout int) (jre *jrequest) {
 }
 
 // 设置headers,1
-func (jr *jrequest) A_SetHeaders(headers map[string][]string) (jre *jrequest) {
+func (jr *jrequest) CSetHeaders(headers map[string][]string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -171,7 +171,7 @@ func (jr *jrequest) A_SetHeaders(headers map[string][]string) (jre *jrequest) {
 }
 
 // 添加headers,1
-func (jr *jrequest) A_AddHeaders(headers map[string]string) (jre *jrequest) {
+func (jr *jrequest) CAddHeaders(headers map[string]string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -194,7 +194,7 @@ func (jr *jrequest) A_AddHeaders(headers map[string]string) (jre *jrequest) {
 }
 
 // 设置body data,1
-func (jr *jrequest) A_SetData(d interface{}) (jre *jrequest) {
+func (jr *jrequest) CSetData(d interface{}) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -213,7 +213,7 @@ func (jr *jrequest) A_SetData(d interface{}) (jre *jrequest) {
 }
 
 // 设置params,1
-func (jr *jrequest) A_SetParams(params map[string][]string) (jre *jrequest) {
+func (jr *jrequest) CSetParams(params map[string][]string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -244,7 +244,7 @@ func (jr *jrequest) A_SetParams(params map[string][]string) (jre *jrequest) {
 }
 
 // 追加params,1
-func (jr *jrequest) A_AddParams(params map[string]string) (jre *jrequest) {
+func (jr *jrequest) CAddParams(params map[string]string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -268,7 +268,7 @@ func (jr *jrequest) A_AddParams(params map[string]string) (jre *jrequest) {
 }
 
 // 设置cookies
-func (jr *jrequest) A_SetCookies(cookies []map[string]string) (jre *jrequest) {
+func (jr *jrequest) CSetCookies(cookies []map[string]string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -285,7 +285,7 @@ func (jr *jrequest) A_SetCookies(cookies []map[string]string) (jre *jrequest) {
 }
 
 // 设置是否转发
-func (jr *jrequest) A_SetIsRedirect(isredirect bool) (jre *jrequest) {
+func (jr *jrequest) CSetIsRedirect(isredirect bool) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -300,7 +300,7 @@ func (jr *jrequest) A_SetIsRedirect(isredirect bool) (jre *jrequest) {
 }
 
 // 设置http 2.0
-func (jr *jrequest) A_SetHttpVersion(version int) (jre *jrequest) {
+func (jr *jrequest) CSetHttpVersion(version int) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -319,7 +319,7 @@ func (jr *jrequest) A_SetHttpVersion(version int) (jre *jrequest) {
 
 // 设置是否验证ssl
 // 先设置capath
-func (jr *jrequest) A_SetIsVerifySSL(isverifyssl bool) (jre *jrequest) {
+func (jr *jrequest) CSetIsVerifySSL(isverifyssl bool) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -359,7 +359,7 @@ func (jr *jrequest) A_SetIsVerifySSL(isverifyssl bool) (jre *jrequest) {
 }
 
 // 设置connection是否为长连接，keep-alive
-func (jr *jrequest) A_SetKeepalive(iskeepalive bool) (jre *jrequest) {
+func (jr *jrequest) CSetKeepalive(iskeepalive bool) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -368,7 +368,7 @@ func (jr *jrequest) A_SetKeepalive(iskeepalive bool) (jre *jrequest) {
 }
 
 // 设置capath
-func (jr *jrequest) A_SetCAPath(CAPath string) (jre *jrequest) {
+func (jr *jrequest) CSetCAPath(CAPath string) (jre *jrequest) {
 	if jr == nil {
 		return nil
 	}
@@ -377,7 +377,7 @@ func (jr *jrequest) A_SetCAPath(CAPath string) (jre *jrequest) {
 }
 
 // 发起请求
-func (jre *jrequest) A_Do() (resp *jresponse, err error) {
+func (jre *jrequest) CDo() (resp *jresponse, err error) {
 	var reader io.Reader = bytes.NewReader(jre.Data)
 	//var err error
 	jre.req, err = http.NewRequest(jre.method, jre.Url, reader)

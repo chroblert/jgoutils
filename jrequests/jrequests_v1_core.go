@@ -31,7 +31,7 @@ import (
 :return body: 响应体
 */
 //func SingleReq(method, reqUrl string,cookies map[string]string,headers map[string]string,proxy string,data []byte,params map[string]string, isredirect bool,timeout int)(statuscode int,respheaders map[string][]string,body []byte,err error){
-func SingleReq(method, reqUrl string, option Option) (resp *http.Response, err error) {
+func SingleReq(method, reqUrl string, option Option) (statuscode int, respheaders map[string][]string, body []byte, err error) {
 	var client *http.Client
 	client = &http.Client{}
 	var httpTransport *http.Transport
@@ -64,7 +64,7 @@ func SingleReq(method, reqUrl string, option Option) (resp *http.Response, err e
 				for _, filename := range caFilenames {
 					caCrt, err := ioutil.ReadFile(filename)
 					if err != nil {
-						return nil, err
+						return -1, nil, nil, err
 					}
 					//jlog.Debug("导入证书结果:", rootCAPool.AppendCertsFromPEM(caCrt))
 					rootCAPool.AppendCertsFromPEM(caCrt)
@@ -104,7 +104,7 @@ func SingleReq(method, reqUrl string, option Option) (resp *http.Response, err e
 	req, err = http.NewRequest(method, reqUrl, reader)
 	if err != nil {
 		//jlog.Error("http.NewRequest,error: ", err)
-		return nil, err
+		return -1, nil, nil, err
 	}
 	// setting request params
 	if option.Params != nil {
@@ -131,25 +131,24 @@ func SingleReq(method, reqUrl string, option Option) (resp *http.Response, err e
 	}
 	u, err := url.Parse(reqUrl)
 	if err != nil {
-		return nil, err
+		return -1, nil, nil, err
 	}
 	client.Jar.SetCookies(u, cookieList)
 	// 设置是否使用长连接，是否为keep-alive,默认false
 	req.Close = !option.IsKeepAlive
 	// 发送请求
-	resp, err = client.Do(req)
-	return resp, err
-	//if err != nil {
-	//	//jlog.Error("client.Do,error: ", err)
-	//	return -1, nil, nil, err
-	//
-	//}
-	//defer resp.Body.Close()
-	//body, err = ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	//	//jlog.Error("ioutil.ReadAll,error: ", err)
-	//	return -1, nil, nil, err
-	//
-	//}
-	//return resp.StatusCode, resp.Header, body, nil
+	resp, err := client.Do(req)
+	//return resp, err
+	if err != nil {
+		//jlog.Error("client.Do,error: ", err)
+		return -1, nil, nil, err
+
+	}
+	defer resp.Body.Close()
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return -1, nil, nil, err
+
+	}
+	return resp.StatusCode, resp.Header, body, nil
 }

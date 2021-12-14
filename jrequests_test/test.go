@@ -44,7 +44,7 @@ func main() {
 		wg.Add(1)
 		go func(t int) {
 			defer wg.Done()
-			resp, err := jrequests.A_Get("http://myip.ipip.net/").A_SetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).A_SetData(nil).A_SetProxy("http://localhost:8080").A_SetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).A_SetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).A_Do()
+			resp, err := jrequests.CGet("http://myip.ipip.net/").CSetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).CDo()
 			if err != nil {
 				jlog.Error(err)
 				return
@@ -53,7 +53,7 @@ func main() {
 		}(i)
 	}
 	wg.Wait()
-	resp, err = jrequests.A_Get("http://myip.ipip.net").A_AddParams(map[string]string{"qqq1": "fdsa"}).A_SetData(nil).A_SetProxy("http://localhost:8080").A_SetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).A_SetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Acceptxxx": {"application/json"}}).A_AddHeaders(map[string]string{"kkkk": "kdfjadlksjf"}).A_AddParams(map[string]string{"fadsfas": "{fasdfsad"}).A_Do()
+	resp, err = jrequests.CGet("http://myip.ipip.net").CAddParams(map[string]string{"qqq1": "fdsa"}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Acceptxxx": {"application/json"}}).CAddHeaders(map[string]string{"kkkk": "kdfjadlksjf"}).CAddParams(map[string]string{"fadsfas": "{fasdfsad"}).CDo()
 	if err != nil {
 		jlog.Error(err)
 		return

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"github.com/chroblert/jgoutils/jfile"
-	"github.com/chroblert/jgoutils/jlog"
 	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
@@ -113,7 +112,7 @@ func New() (jr *jrequest, err error) {
 
 func (jr *jrequest) Do(d ...interface{}) (resp *jresponse, err error) {
 	resp = &jresponse{}
-	jlog.Info(jr.req)
+	//jlog.Info(jr.req)
 	resp.Resp, err = jr.cli.Do(jr.req)
 	return
 }
@@ -288,7 +287,7 @@ func (jr *jrequest) SetProxy(proxy string) {
 	_, err := url.Parse(proxy)
 	if err != nil {
 		//jr.transport.Proxy = nil
-		jlog.Error(err)
+		//jlog.Error(err)
 		return
 	}
 	jr.Proxy = proxy

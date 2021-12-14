@@ -1,9 +1,7 @@
 package jrequests
 
-import "net/http"
-
 //func Get(requrl string,opts...OptionInterface) (statuscode int,headers map[string][]string,body []byte,err error){
-func Get(requrl string, opts ...OptionInterface) (resp *http.Response, err error) {
+func Get(requrl string, opts ...OptionInterface) (statuscode int, respheaders map[string][]string, body []byte, err error) {
 	getOption := getDefaultOptions()
 
 	for _, opt := range opts {
@@ -15,7 +13,7 @@ func Get(requrl string, opts ...OptionInterface) (resp *http.Response, err error
 }
 
 //func Post(requrl string,opts...OptionInterface) (statuscode int,headers map[string][]string,body []byte,err error){
-func Post(requrl string, opts ...OptionInterface) (resp *http.Response, err error) {
+func Post(requrl string, opts ...OptionInterface) (statuscode int, respheaders map[string][]string, body []byte, err error) {
 	getOption := getDefaultOptions()
 	for _, opt := range opts {
 		opt.apply(&getOption)
