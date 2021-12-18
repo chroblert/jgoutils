@@ -17,7 +17,7 @@ import (
 //	log.Println("test")
 //}
 
-func main() {
+func mainA() {
 	go func() {
 		http.ListenAndServe("0.0.0.0:8899", nil)
 	}()

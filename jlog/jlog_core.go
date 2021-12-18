@@ -60,6 +60,7 @@ func NewLogger(logConf LogConfig) *FishLogger {
 	fl.level = logConf.Lv
 	fl.console = logConf.UseConsole
 	fl.verbose = logConf.Verbose
+	fl.iniCreateNewLog = logConf.InitCreateNewLog
 	//日志文件路径设置
 	fl.logFileExt = filepath.Ext(fl.logFullPath)                       // .log
 	fl.logFileName = strings.TrimSuffix(fl.logFullPath, fl.logFileExt) // logs/app

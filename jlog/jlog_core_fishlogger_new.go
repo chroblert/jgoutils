@@ -16,8 +16,9 @@ import (
 
 // 定义FishLogger结构体
 type FishLogger struct {
-	console           bool          // 标准输出  默认 false
-	verbose           bool          // 是否输出行号和文件名 默认 false
+	console           bool // 标准输出  默认 false
+	verbose           bool // 是否输出行号和文件名 默认 false
+	iniCreateNewLog   bool
 	maxStoreDays      int           // 最大保留天数
 	maxSizePerLogFile int64         // 单个日志最大容量 默认 256MB
 	size              int64         // 累计大小 无后缀
@@ -65,6 +66,21 @@ func (fl *FishLogger) SetLogFullPath(logFullPath string) {
 		fl.logFileExt = ".log"
 	}
 	os.MkdirAll(filepath.Dir(fl.logFullPath), 0666)
+}
+
+// 设置日志文件大小 SetMaxSizePerLogFile
+func (fl *FishLogger) SetMaxSizePerLogFile(logfilesize int64) {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	//fl.maxStoreDays = ma
+	fl.maxSizePerLogFile = logfilesize
+}
+
+// iniCreateNewLog
+func (fl *FishLogger) IsIniCreateNewLog(iniCreateNewLog bool) {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.iniCreateNewLog = iniCreateNewLog
 }
 
 // 设置最大保存天数
@@ -400,20 +416,23 @@ func (fl *FishLogger) rotate() error {
 		// 日志缓存
 		fl.writer = bufio.NewWriterSize(fl.file, fl.bufferSize)
 	} else if fl.file == nil {
-		// 对于第一次写入文件
-		// 判断是否存在app.log日志文件，若存在则重命名
-		_, err := os.Stat(fl.logFullPath)
-		if err == nil {
-			// 获取当前日志文件的创建日期
-			// 对日志文件进行重命名
-			fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
-			err = os.Rename(fl.logFullPath, fileBackupName)
-			if err != nil {
-				//log.Println("rename", err)
-				return err
+		// TODO 判断每次运行是否重命名原有日志文件
+		if fl.iniCreateNewLog {
+			// 对于第一次写入文件
+			// 判断是否存在app.log日志文件，若存在则重命名
+			_, err := os.Stat(fl.logFullPath)
+			if err == nil {
+				// 获取当前日志文件的创建日期
+				// 对日志文件进行重命名
+				fileBackupName := filepath.Join(fl.logFileName + now.Format(".2006-01-02_150405") + fl.logFileExt)
+				err = os.Rename(fl.logFullPath, fileBackupName)
+				if err != nil {
+					//log.Println("rename", err)
+					return err
+				}
 			}
 		}
-		// 创建新日志文件app.log
+		// 创建或打开日志文件app.log
 		newLogFile, err := os.OpenFile(fl.logFullPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			return err

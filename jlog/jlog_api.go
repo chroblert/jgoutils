@@ -35,9 +35,18 @@ func SetLogCount(logCount int) {
 	fishLogger.SetLogCount(logCount)
 }
 
+// 第一次运行是否新建日志
+func IsIniCreateNewLog(iniCreateNewLog bool) {
+	fishLogger.IsIniCreateNewLog(iniCreateNewLog)
+}
+
 // 设置文件保存路径
 func SetLogFullPath(logFullPath string) {
 	fishLogger.SetLogFullPath(logFullPath)
+}
+
+func SetMaxSizePerLogFile(logfilesize int64) {
+	fishLogger.SetMaxSizePerLogFile(logfilesize)
 }
 
 // -------- 实例 fishLogger

@@ -57,6 +57,7 @@ var (
 		Lv:                DEBUG,
 		UseConsole:        true,
 		Verbose:           true,
+		InitCreateNewLog:  true,
 	})
 )
 
@@ -79,6 +80,7 @@ type LogConfig struct {
 	Lv                logLevel
 	UseConsole        bool
 	Verbose           bool
+	InitCreateNewLog  bool
 }
 
 func init() {
