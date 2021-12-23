@@ -50,14 +50,14 @@ var (
 	fishLogger = NewLogger(LogConfig{
 		BufferSize:        2048,
 		FlushInterval:     10 * time.Second,
-		MaxStoreDays:      5,
+		MaxStoreDays:      -1,
 		MaxSizePerLogFile: 204800000,
-		LogCount:          5,
+		LogCount:          -1,
 		LogFullPath:       "logs/app.log",
 		Lv:                DEBUG,
 		UseConsole:        true,
 		Verbose:           true,
-		InitCreateNewLog:  true,
+		InitCreateNewLog:  false,
 	})
 )
 

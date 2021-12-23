@@ -331,7 +331,7 @@ func (fl *FishLogger) delete() {
 			return nil
 		}
 		// 防止误删
-		if !info.IsDir() && info.ModTime().Before(fakeNow) && strings.HasSuffix(info.Name(), fl.logFileExt) {
+		if !info.IsDir() && info.ModTime().Before(fakeNow) && strings.HasSuffix(info.Name(), fl.logFileExt) && strings.HasPrefix(info.Name(), fl.logFileName+".") {
 			return os.Remove(fpath)
 
 		}
@@ -452,20 +452,22 @@ func (fl *FishLogger) rotate() error {
 	}
 	//fl.writer = bufio.NewWriterSize(fl.file, BufferSize)
 	// 日志文件的个数不能超过logCount个，若超过，则刪除最先创建的日志文件
-	pattern := fl.logFileName + ".*" + fl.logFileExt
-	for files, _ := filepath.Glob(pattern); len(files) > fl.logCount; files, _ = filepath.Glob(pattern) {
-		// 删除log文件
-		os.Remove(files[0])
-		if fl.level == -1 {
-			tmpBuffer := fl.header(DEBUG, 0)
-			fmt.Fprintf(tmpBuffer, "删除旧日志文件")
-			fmt.Fprintf(tmpBuffer, files[0])
-			//fmt.Fprintf(tmpBuffer,"\033[0m")
-			fmt.Fprintf(tmpBuffer, "\n")
-			// 黑底蓝色
-			//fmt.Fprintf(os.Stdout,"\033[1;34;40m"+string(tmpBuffer.Bytes())+"\033[0m")
-			color.Blue(string(tmpBuffer.Bytes()))
-			fl.writer.Write(tmpBuffer.Bytes())
+	if fl.logCount > 0 {
+		pattern := fl.logFileName + ".*" + fl.logFileExt
+		for files, _ := filepath.Glob(pattern); len(files) > fl.logCount; files, _ = filepath.Glob(pattern) {
+			// 删除log文件
+			os.Remove(files[0])
+			if fl.level == -1 {
+				tmpBuffer := fl.header(DEBUG, 0)
+				fmt.Fprintf(tmpBuffer, "删除旧日志文件")
+				fmt.Fprintf(tmpBuffer, files[0])
+				//fmt.Fprintf(tmpBuffer,"\033[0m")
+				fmt.Fprintf(tmpBuffer, "\n")
+				// 黑底蓝色
+				//fmt.Fprintf(os.Stdout,"\033[1;34;40m"+string(tmpBuffer.Bytes())+"\033[0m")
+				color.Blue(string(tmpBuffer.Bytes()))
+				fl.writer.Write(tmpBuffer.Bytes())
+			}
 		}
 	}
 	return nil
