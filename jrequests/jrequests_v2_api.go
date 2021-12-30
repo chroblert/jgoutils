@@ -229,17 +229,6 @@ func (jr *jrequest) CSetParams(params map[string][]string) (jre *jrequest) {
 			jr.Params[k][k2] = v2
 		}
 	}
-	//if jr.req != nil{
-	//	// 设置params
-	//	if jr.Params != nil {
-	//		query := jr.req.URL.Query()
-	//		for paramKey, paramValue := range jr.Params {
-	//			query.Add(paramKey, paramValue)
-	//		}
-	//		jr.req.URL.RawQuery = query.Encode()
-	//	}
-	//}
-
 	return jr
 }
 

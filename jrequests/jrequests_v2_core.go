@@ -283,6 +283,9 @@ func (jr *jrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err 
 
 // 设置代理
 func (jr *jrequest) SetProxy(proxy string) {
+	if jr == nil {
+		return
+	}
 	// TODO proxy格式校验
 	_, err := url.Parse(proxy)
 	if err != nil {
@@ -303,6 +306,9 @@ func (jr *jrequest) SetProxy(proxy string) {
 
 // 设置超时
 func (jr *jrequest) SetTimeout(timeout int) {
+	if jr == nil {
+		return
+	}
 	jr.Timeout = timeout
 	jr.cli.Timeout = time.Second * time.Duration(jr.Timeout)
 }
@@ -349,20 +355,31 @@ func (jr *jrequest) AddHeaders(headers map[string]string) {
 }
 
 // 设置body data
-func (jr *jrequest) SetData(data []byte) {
-	jr.Data = data
+func (jr *jrequest) SetData(d interface{}) {
+	if jr == nil {
+		return
+	}
+	switch d.(type) {
+	case []byte:
+		jr.Data = d.([]byte)
+	case string:
+		jr.Data = []byte(d.(string))
+	default:
+		jr.Data = []byte(nil)
+	}
+	//jr.Data = data
 }
 
 // 设置params
 func (jr *jrequest) SetParams(params map[string][]string) {
-	if jr.Params == nil {
-		if len(params) == 0 {
-			jr.Params = make(map[string][]string)
-			return
-		} else {
-			jr.Params = make(map[string][]string, len(params))
-		}
-
+	if jr == nil {
+		return
+	}
+	if len(params) == 0 {
+		jr.Params = make(map[string][]string)
+		return
+	} else {
+		jr.Params = make(map[string][]string, len(params))
 	}
 	for k, v := range params {
 		jr.Params[k] = make([]string, len(v))
@@ -398,6 +415,9 @@ func (jr *jrequest) AddParams(params map[string]string) {
 
 // 设置cookies
 func (jr *jrequest) SetCookies(cookies []map[string]string) {
+	if jr == nil {
+		return
+	}
 	if jr.Cookies == nil {
 		jr.Cookies = make([]*http.Cookie, len(cookies))
 	}
@@ -411,6 +431,9 @@ func (jr *jrequest) SetCookies(cookies []map[string]string) {
 
 // 设置是否转发
 func (jr *jrequest) SetIsRedirect(isredirect bool) {
+	if jr == nil {
+		return
+	}
 	jr.IsRedirect = isredirect
 	// 设置是否转发
 	if !jr.IsRedirect {
@@ -422,6 +445,9 @@ func (jr *jrequest) SetIsRedirect(isredirect bool) {
 
 // 设置http 2.0
 func (jr *jrequest) SetHttpVersion(version int) {
+	if jr == nil {
+		return
+	}
 	jr.HttpVersion = version
 	// 设置httptransport
 	switch jr.HttpVersion {
@@ -436,6 +462,9 @@ func (jr *jrequest) SetHttpVersion(version int) {
 
 // 设置是否验证ssl
 func (jr *jrequest) SetIsVerifySSL(isverifyssl bool) {
+	if jr == nil {
+		return
+	}
 	jr.IsVerifySSL = isverifyssl
 	// 设置是否验证服务端证书
 	if !jr.IsVerifySSL {
@@ -472,10 +501,16 @@ func (jr *jrequest) SetIsVerifySSL(isverifyssl bool) {
 
 // 设置connection是否为长连接，keep-alive
 func (jr *jrequest) SetKeepalive(iskeepalive bool) {
+	if jr == nil {
+		return
+	}
 	jr.IsKeepAlive = iskeepalive
 }
 
 // 设置capath
 func (jr *jrequest) SetCAPath(CAPath string) {
+	if jr == nil {
+		return
+	}
 	jr.CAPath = CAPath
 }
