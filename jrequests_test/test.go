@@ -13,24 +13,6 @@ func main() {
 	req.SetProxy("http://localhost:8080")
 	req.SetHttpVersion(2)
 	req.SetKeepalive(true)
-	//var wg = &sync.WaitGroup{}
-	//for i := 0; i< 1; i++{
-	//	wg.Add(1)
-	//	go func(t int) {
-	//		defer wg.Done()
-	//		resp,err := req.Get("https://ipinfo.io")
-	//		if err != nil{
-	//			jlog.Error(err)
-	//			return
-	//		}
-	//		jlog.Error(t,resp)
-	//		jlog.Info(t)
-	//		jlog.Info(resp.Resp.Header)
-	//		jlog.Info(resp.Resp.ProtoMajor)
-	//		//jlog.Info(string(resp.Body()))
-	//	}(i)
-	//}
-	//wg.Wait()
 	resp, err := req.Get("https://ipinfo.io")
 	if err != nil {
 		jlog.Error(err)

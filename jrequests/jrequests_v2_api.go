@@ -9,20 +9,19 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
 
 func CGet(reqUrl string, d ...interface{}) (jre *jrequest) {
 	var err error
-	jre, err = New()
+	jre = jrePool.Get().(*jrequest)
+	jre.cli.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		return nil
 	}
 	jre.Url = reqUrl
-	//resp = &jreesponse{}
-	//jre.Url = reqUrl
-	//var reader io.Reader
 	if len(d) > 0 {
 		switch d[0].(type) {
 		case []byte:
@@ -33,48 +32,20 @@ func CGet(reqUrl string, d ...interface{}) (jre *jrequest) {
 			jre.Data = []byte(nil)
 		}
 	}
-	//else{
-	//	reader = nil
-	//}
-	////var err error
-	//jre.req,err = http.NewRequest("GET",reqUrl,reader)
-	//if err != nil{
-	//	return nil
-	//}
-	//// 设置headers
-	//for k,v := range jre.Headers{
-	//	jre.req.Header.Add(k,v)
-	//}
-	//// 设置params
-	//if jre.Params != nil {
-	//	query := jre.req.URL.Query()
-	//	for paramKey, paramValue := range jre.Params {
-	//		query.Add(paramKey, paramValue)
-	//	}
-	//	jre.req.URL.RawQuery = query.Encode()
-	//}
-	// 设置cookies
-	//u,err := url.Parse(reqUrl)
-	//jre.cli.Jar.SetCookies(u,jre.Cookies)
 	jre.method = "GET"
 	// 设置transport
 	jre.cli.Transport = jre.transport
-	//// 设置connection
-	//jre.req.Close = !jre.IsKeepAlive
-	//resp.Resp,err = jre.cli.Do(jre.req)
 	return
 }
 
 func CPost(reqUrl string, d ...interface{}) (jre *jrequest) {
 	var err error
-	jre, err = New()
+	jre = jrePool.Get().(*jrequest)
+	jre.cli.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		return nil
 	}
 	jre.Url = reqUrl
-	//resp = &jreesponse{}
-	//jre.Url = reqUrl
-	//var reader io.Reader
 	if len(d) > 0 {
 		switch d[0].(type) {
 		case []byte:
@@ -85,35 +56,9 @@ func CPost(reqUrl string, d ...interface{}) (jre *jrequest) {
 			jre.Data = []byte(nil)
 		}
 	}
-	//else{
-	//	reader = nil
-	//}
-	////var err error
-	//jre.req,err = http.NewRequest("GET",reqUrl,reader)
-	//if err != nil{
-	//	return nil
-	//}
-	//// 设置headers
-	//for k,v := range jre.Headers{
-	//	jre.req.Header.Add(k,v)
-	//}
-	//// 设置params
-	//if jre.Params != nil {
-	//	query := jre.req.URL.Query()
-	//	for paramKey, paramValue := range jre.Params {
-	//		query.Add(paramKey, paramValue)
-	//	}
-	//	jre.req.URL.RawQuery = query.Encode()
-	//}
-	// 设置cookies
-	//u,err := url.Parse(reqUrl)
-	//jre.cli.Jar.SetCookies(u,jre.Cookies)
 	jre.method = "POST"
 	// 设置transport
 	jre.cli.Transport = jre.transport
-	//// 设置connection
-	//jre.req.Close = !jre.IsKeepAlive
-	//resp.Resp,err = jre.cli.Do(jre.req)
 	return
 }
 

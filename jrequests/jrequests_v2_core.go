@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var jrePool *sync.Pool = &sync.Pool{New: func() interface{} {
+var jrePool = &sync.Pool{New: func() interface{} {
 	return &jrequest{
 		Proxy:   "",
 		Timeout: 60,
@@ -37,7 +37,7 @@ var jrePool *sync.Pool = &sync.Pool{New: func() interface{} {
 	}
 }}
 
-// header,cookie,params
+// 用于链式
 type jrequest struct {
 	Headers map[string][]string
 	Params  map[string][]string
@@ -58,7 +58,12 @@ type jrequest struct {
 	method      string
 }
 
-type requestConfig struct {
+// 用于新建
+type jnrequest struct {
+	Headers map[string][]string
+	Params  map[string][]string
+	Cookies []*http.Cookie
+
 	Proxy       string //func(*http.Request) (*url.URL, error)
 	Timeout     int
 	Data        []byte
@@ -67,7 +72,23 @@ type requestConfig struct {
 	HttpVersion int
 	IsKeepAlive bool
 	CAPath      string
+	Url         string
+	transport   *http.Transport
+	cli         *http.Client
+	req         *http.Request
+	method      string
 }
+
+//type requestConfig struct {
+//	Proxy       string //func(*http.Request) (*url.URL, error)
+//	Timeout     int
+//	Data        []byte
+//	IsRedirect  bool
+//	IsVerifySSL bool
+//	HttpVersion int
+//	IsKeepAlive bool
+//	CAPath      string
+//}
 type jresponse struct {
 	Resp *http.Response
 }
@@ -83,27 +104,9 @@ func (jrs *jresponse) Body() []byte {
 }
 
 // 创建实例
-func New() (jr *jrequest, err error) {
-	//jr = &jrequest{
-	//	Proxy:       "",
-	//	Timeout:     60,
-	//	Headers:     map[string]string{
-	//		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0",
-	//	},
-	//	Data:        nil,
-	//	Params:      nil,
-	//	Cookies:     nil,
-	//	IsRedirect:  false,
-	//	IsVerifySSL: false,
-	//	HttpVersion: 1,
-	//	IsKeepAlive: false,
-	//	CAPath:      "cas",
-	//	//Url:         "",
-	//	transport:   &http.Transport{},
-	//	cli:         &http.Client{},
-	//}
-	jr = jrePool.Get().(*jrequest)
-	jr.cli.Jar, err = cookiejar.New(nil)
+func New() (jrn *jnrequest, err error) {
+	jrn = (*jnrequest)(jrePool.Get().(*jrequest))
+	jrn.cli.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		return
 	}
@@ -117,54 +120,7 @@ func (jr *jrequest) Do(d ...interface{}) (resp *jresponse, err error) {
 	return
 }
 
-//func (jr *jrequest) A_Get(reqUrl string,d ...interface{}) (jre *jrequest){
-//	//resp = &jresponse{}
-//	//jr.Url = reqUrl
-//	var reader io.Reader
-//	if len(d) > 0{
-//		switch d[0].(type) {
-//		case []byte:
-//			reader = bytes.NewReader(d[0].([]byte))
-//		case string:
-//			reader = strings.NewReader(d[0].(string))
-//		default:
-//			reader = nil
-//		}
-//	}else{
-//		reader = nil
-//	}
-//	var err error
-//	jr.req,err = http.NewRequest("GET",reqUrl,reader)
-//	if err != nil{
-//		return nil
-//	}
-//	// 设置headers
-//	for k,v := range jr.Headers{
-//		jr.req.Header.Add(k,v)
-//	}
-//	// 设置cookies
-//	u,err := url.Parse(reqUrl)
-//	jr.cli.Jar.SetCookies(u,jr.Cookies)
-//	// 设置params
-//	if jr.Params != nil {
-//		query := jr.req.URL.Query()
-//		for paramKey, paramValue := range jr.Params {
-//			//query.Add(paramKey, paramValue)
-//			for _,v2 := range paramValue{
-//				query.Add(paramKey,v2)
-//			}
-//		}
-//		jr.req.URL.RawQuery = query.Encode()
-//	}
-//	// 设置transport
-//	jr.cli.Transport = jr.transport
-//	// 设置connection
-//	jr.req.Close = !jr.IsKeepAlive
-//	//resp.Resp,err = jr.cli.Do(jr.req)
-//	return jr
-//}
-
-func (jr *jrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
+func (jr *jnrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
 	resp = &jresponse{}
 	//jr.Url = reqUrl
 	var reader io.Reader
@@ -210,7 +166,7 @@ func (jr *jrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err e
 	// 设置connection
 	jr.req.Close = !jr.IsKeepAlive
 	resp.Resp, err = jr.cli.Do(jr.req)
-	jr = &jrequest{
+	jr = &jnrequest{
 		Proxy:   "",
 		Timeout: 60,
 		Headers: map[string][]string{
@@ -228,11 +184,11 @@ func (jr *jrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err e
 		transport: &http.Transport{},
 		cli:       &http.Client{},
 	}
-	jrePool.Put(jr)
+	jrePool.Put((*jrequest)(jr))
 	return
 }
 
-func (jr *jrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
+func (jr *jnrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
 	resp = &jresponse{}
 	//jr.Url = reqUrl
 	var reader io.Reader
@@ -282,7 +238,7 @@ func (jr *jrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err 
 }
 
 // 设置代理
-func (jr *jrequest) SetProxy(proxy string) {
+func (jr *jnrequest) SetProxy(proxy string) {
 	if jr == nil {
 		return
 	}
@@ -305,7 +261,7 @@ func (jr *jrequest) SetProxy(proxy string) {
 }
 
 // 设置超时
-func (jr *jrequest) SetTimeout(timeout int) {
+func (jr *jnrequest) SetTimeout(timeout int) {
 	if jr == nil {
 		return
 	}
@@ -314,7 +270,7 @@ func (jr *jrequest) SetTimeout(timeout int) {
 }
 
 // 重置并设置headers
-func (jr *jrequest) SetHeaders(headers map[string][]string) {
+func (jr *jnrequest) SetHeaders(headers map[string][]string) {
 	if jr == nil {
 		return
 	}
@@ -333,7 +289,7 @@ func (jr *jrequest) SetHeaders(headers map[string][]string) {
 }
 
 // 添加headers
-func (jr *jrequest) AddHeaders(headers map[string]string) {
+func (jr *jnrequest) AddHeaders(headers map[string]string) {
 	if jr == nil {
 		return
 	}
@@ -355,7 +311,7 @@ func (jr *jrequest) AddHeaders(headers map[string]string) {
 }
 
 // 设置body data
-func (jr *jrequest) SetData(d interface{}) {
+func (jr *jnrequest) SetData(d interface{}) {
 	if jr == nil {
 		return
 	}
@@ -371,7 +327,7 @@ func (jr *jrequest) SetData(d interface{}) {
 }
 
 // 设置params
-func (jr *jrequest) SetParams(params map[string][]string) {
+func (jr *jnrequest) SetParams(params map[string][]string) {
 	if jr == nil {
 		return
 	}
@@ -390,7 +346,7 @@ func (jr *jrequest) SetParams(params map[string][]string) {
 }
 
 // 追加params,1
-func (jr *jrequest) AddParams(params map[string]string) {
+func (jr *jnrequest) AddParams(params map[string]string) {
 	if jr == nil {
 		return
 	}
@@ -414,7 +370,7 @@ func (jr *jrequest) AddParams(params map[string]string) {
 }
 
 // 设置cookies
-func (jr *jrequest) SetCookies(cookies []map[string]string) {
+func (jr *jnrequest) SetCookies(cookies []map[string]string) {
 	if jr == nil {
 		return
 	}
@@ -430,7 +386,7 @@ func (jr *jrequest) SetCookies(cookies []map[string]string) {
 }
 
 // 设置是否转发
-func (jr *jrequest) SetIsRedirect(isredirect bool) {
+func (jr *jnrequest) SetIsRedirect(isredirect bool) {
 	if jr == nil {
 		return
 	}
@@ -444,7 +400,7 @@ func (jr *jrequest) SetIsRedirect(isredirect bool) {
 }
 
 // 设置http 2.0
-func (jr *jrequest) SetHttpVersion(version int) {
+func (jr *jnrequest) SetHttpVersion(version int) {
 	if jr == nil {
 		return
 	}
@@ -461,7 +417,7 @@ func (jr *jrequest) SetHttpVersion(version int) {
 }
 
 // 设置是否验证ssl
-func (jr *jrequest) SetIsVerifySSL(isverifyssl bool) {
+func (jr *jnrequest) SetIsVerifySSL(isverifyssl bool) {
 	if jr == nil {
 		return
 	}
@@ -500,7 +456,7 @@ func (jr *jrequest) SetIsVerifySSL(isverifyssl bool) {
 }
 
 // 设置connection是否为长连接，keep-alive
-func (jr *jrequest) SetKeepalive(iskeepalive bool) {
+func (jr *jnrequest) SetKeepalive(iskeepalive bool) {
 	if jr == nil {
 		return
 	}
@@ -508,7 +464,7 @@ func (jr *jrequest) SetKeepalive(iskeepalive bool) {
 }
 
 // 设置capath
-func (jr *jrequest) SetCAPath(CAPath string) {
+func (jr *jnrequest) SetCAPath(CAPath string) {
 	if jr == nil {
 		return
 	}

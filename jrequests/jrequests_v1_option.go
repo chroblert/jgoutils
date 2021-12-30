@@ -1,3 +1,5 @@
+// +build ignore
+
 package jrequests
 
 // 请求选项的结构体
