@@ -338,29 +338,36 @@ func (jre *jrequest) CDo() (resp *jresponse, err error) {
 	// 设置cookie
 	u, err := url.Parse(jre.Url)
 	jre.cli.Jar.SetCookies(u, jre.Cookies)
+	// 设置是否转发
+	if !jre.IsRedirect {
+		jre.cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
 	// 设置connection
 	jre.req.Close = !jre.IsKeepAlive
 	resp = &jresponse{}
 	//jlog.Info(jre.req)
 	resp.Resp, err = jre.cli.Do(jre.req)
-	jre = &jrequest{
-		Proxy:   "",
-		Timeout: 60,
-		Headers: map[string][]string{
-			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
-		},
-		Data:        nil,
-		Params:      nil,
-		Cookies:     nil,
-		IsRedirect:  false,
-		IsVerifySSL: false,
-		HttpVersion: 1,
-		IsKeepAlive: false,
-		CAPath:      "cas",
-		//Url:         "",
-		transport: &http.Transport{},
-		cli:       &http.Client{},
-	}
+	//jre = &jrequest{
+	//	Proxy:   "",
+	//	Timeout: 60,
+	//	Headers: map[string][]string{
+	//		"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
+	//	},
+	//	Data:        nil,
+	//	Params:      nil,
+	//	Cookies:     nil,
+	//	IsRedirect:  false,
+	//	IsVerifySSL: false,
+	//	HttpVersion: 1,
+	//	IsKeepAlive: false,
+	//	CAPath:      "cas",
+	//	//Url:         "",
+	//	transport: &http.Transport{},
+	//	cli:       &http.Client{},
+	//}
+	resetJr(jre)
 	jrePool.Put(jre)
 	return
 }

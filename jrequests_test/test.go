@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jrequests"
-	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -22,23 +22,27 @@ func main() {
 	jlog.Info(resp.Resp.ProtoMajor)
 	//jlog.Info(string(resp.Body()))
 	var wg = &sync.WaitGroup{}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
 		wg.Add(1)
 		go func(t int) {
 			defer wg.Done()
-			resp, err := jrequests.CGet("http://myip.ipip.net/").CSetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).CDo()
+			resp, err := req.Get("http://myip.ipip.net") //jrequests.CGet("http://myip.ipip.net/").CSetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).CDo()
 			if err != nil {
 				jlog.Error(err)
 				return
 			}
-			jlog.Info(string(resp.Body()))
+			jlog.Info(strings.TrimSpace(string(resp.Body())))
 		}(i)
 	}
 	wg.Wait()
+	req.Get("http://myip.ipip.net") //jrequests.CGet("http://myip.ipip.net/").CSetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).CDo()
+	req.Get("http://ipinfo.io")     //jrequests.CGet("http://myip.ipip.net/").CSetParams(map[string][]string{strconv.Itoa(t): {strconv.Itoa(t)}}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Accept": {"application/json"}}).CDo()
 	resp, err = jrequests.CGet("http://myip.ipip.net").CAddParams(map[string]string{"qqq1": "fdsa"}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Acceptxxx": {"application/json"}}).CAddHeaders(map[string]string{"kkkk": "kdfjadlksjf"}).CAddParams(map[string]string{"fadsfas": "{fasdfsad"}).CDo()
 	if err != nil {
 		jlog.Error(err)
 		return
 	}
+	jrequests.CGet("http://myip.ipip.net").CAddParams(map[string]string{"qqq1": "fdsa"}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Acceptxxx": {"application/json"}}).CAddHeaders(map[string]string{"kkkk": "kdfjadlksjf"}).CAddParams(map[string]string{"fadsfas": "{fasdfsad"}).CDo()
+	jrequests.CGet("http://myip.ipip.net").CAddParams(map[string]string{"qqq1": "fdsa"}).CSetData(nil).CSetProxy("http://localhost:8080").CSetParams(map[string][]string{"q1": {"v1 '\"", "v2"}}).CSetHeaders(map[string][]string{"Content-Type": {"application/json"}, "Acceptxxx": {"application/json"}}).CAddHeaders(map[string]string{"kkkk": "kdfjadlksjf"}).CAddParams(map[string]string{"fadsfas": "{fasdfsad"}).CDo()
 	jlog.Info(string(resp.Body()))
 }

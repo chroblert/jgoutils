@@ -23,14 +23,15 @@ var jrePool = &sync.Pool{New: func() interface{} {
 		Headers: map[string][]string{
 			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
 		},
-		Data:        nil,
-		Params:      nil,
-		Cookies:     nil,
-		IsRedirect:  false,
-		IsVerifySSL: false,
-		HttpVersion: 1,
-		IsKeepAlive: false,
-		CAPath:      "cas",
+		Data:         nil,
+		Params:       nil,
+		Cookies:      nil,
+		IsRedirect:   true,
+		IsVerifySSL:  false,
+		HttpVersion:  1,
+		IsKeepAlive:  false,
+		IsKeepCookie: false,
+		CAPath:       "cas",
 		//Url:         "",
 		transport: &http.Transport{},
 		cli:       &http.Client{},
@@ -43,19 +44,20 @@ type jrequest struct {
 	Params  map[string][]string
 	Cookies []*http.Cookie
 
-	Proxy       string //func(*http.Request) (*url.URL, error)
-	Timeout     int
-	Data        []byte
-	IsRedirect  bool
-	IsVerifySSL bool
-	HttpVersion int
-	IsKeepAlive bool
-	CAPath      string
-	Url         string
-	transport   *http.Transport
-	cli         *http.Client
-	req         *http.Request
-	method      string
+	Proxy        string //func(*http.Request) (*url.URL, error)
+	Timeout      int
+	Data         []byte
+	IsRedirect   bool
+	IsVerifySSL  bool
+	HttpVersion  int
+	IsKeepAlive  bool
+	IsKeepCookie bool
+	CAPath       string
+	Url          string
+	transport    *http.Transport
+	cli          *http.Client
+	req          *http.Request
+	method       string
 }
 
 // 用于新建
@@ -64,19 +66,20 @@ type jnrequest struct {
 	Params  map[string][]string
 	Cookies []*http.Cookie
 
-	Proxy       string //func(*http.Request) (*url.URL, error)
-	Timeout     int
-	Data        []byte
-	IsRedirect  bool
-	IsVerifySSL bool
-	HttpVersion int
-	IsKeepAlive bool
-	CAPath      string
-	Url         string
-	transport   *http.Transport
-	cli         *http.Client
-	req         *http.Request
-	method      string
+	Proxy        string //func(*http.Request) (*url.URL, error)
+	Timeout      int
+	Data         []byte
+	IsRedirect   bool
+	IsVerifySSL  bool
+	HttpVersion  int
+	IsKeepAlive  bool
+	IsKeepCookie bool
+	CAPath       string
+	Url          string
+	transport    *http.Transport
+	cli          *http.Client
+	req          *http.Request
+	method       string
 }
 
 //type requestConfig struct {
@@ -104,22 +107,33 @@ func (jrs *jresponse) Body() []byte {
 }
 
 // 创建实例
-func New() (jrn *jnrequest, err error) {
+// param d:是否保存cookie，true or false
+func New(d ...interface{}) (jrn *jnrequest, err error) {
 	jrn = (*jnrequest)(jrePool.Get().(*jrequest))
 	jrn.cli.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		return
 	}
+	// 设置是否保存cookie
+	if len(d) > 0 {
+		switch d[0].(type) {
+		case bool:
+			jrn.IsKeepCookie = d[0].(bool)
+		default:
+			jrn.IsKeepCookie = false
+		}
+	}
 	return
 }
 
-func (jr *jrequest) Do(d ...interface{}) (resp *jresponse, err error) {
-	resp = &jresponse{}
-	//jlog.Info(jr.req)
-	resp.Resp, err = jr.cli.Do(jr.req)
-	return
-}
+//func (jr *jrequest) Do(d ...interface{}) (resp *jresponse, err error) {
+//	resp = &jresponse{}
+//	//jlog.Info(req2)
+//	resp.Resp, err = jr.cli.Do(jr.req)
+//	return
+//}
 
+// TODO 解决并发 资源共享问题
 func (jr *jnrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
 	resp = &jresponse{}
 	//jr.Url = reqUrl
@@ -137,55 +151,68 @@ func (jr *jnrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err 
 		reader = nil
 	}
 
-	jr.req, err = http.NewRequest("GET", reqUrl, reader)
+	//req2, err = http.NewRequest("GET", reqUrl, reader)
+	req2, err := http.NewRequest("GET", reqUrl, reader)
 	if err != nil {
 		return nil, err
 	}
 	// 设置headers
 	for k, v := range jr.Headers {
 		for _, v2 := range v {
-			jr.req.Header.Add(k, v2)
+			req2.Header.Add(k, v2)
 		}
 	}
 	// 设置cookies
 	u, err := url.Parse(reqUrl)
 	jr.cli.Jar.SetCookies(u, jr.Cookies)
+	// 设置是否转发
+	if !jr.IsRedirect {
+		jr.cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
 	// 设置params
 	if jr.Params != nil {
-		query := jr.req.URL.Query()
+		query := req2.URL.Query()
 		for paramKey, paramValue := range jr.Params {
 			//query.Add(paramKey, paramValue)
 			for _, v2 := range paramValue {
 				query.Add(paramKey, v2)
 			}
 		}
-		jr.req.URL.RawQuery = query.Encode()
+		req2.URL.RawQuery = query.Encode()
 	}
 	// 设置transport
 	jr.cli.Transport = jr.transport
 	// 设置connection
-	jr.req.Close = !jr.IsKeepAlive
-	resp.Resp, err = jr.cli.Do(jr.req)
-	jr = &jnrequest{
-		Proxy:   "",
-		Timeout: 60,
-		Headers: map[string][]string{
-			"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
-		},
-		Data:        nil,
-		Params:      nil,
-		Cookies:     nil,
-		IsRedirect:  false,
-		IsVerifySSL: false,
-		HttpVersion: 1,
-		IsKeepAlive: false,
-		CAPath:      "cas",
-		//Url:         "",
-		transport: &http.Transport{},
-		cli:       &http.Client{},
+	req2.Close = !jr.IsKeepAlive
+	resp.Resp, err = jr.cli.Do(req2)
+	// 清空cookie
+	if err == nil {
+		// 清空cookie
+		if !jr.IsKeepCookie {
+			jr.cli.Jar, err = cookiejar.New(nil)
+		}
 	}
-	jrePool.Put((*jrequest)(jr))
 	return
+}
+
+func resetJr(jr *jrequest) {
+	jr.Proxy = ""
+	jr.Timeout = 60
+	jr.Headers = map[string][]string{
+		"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
+	}
+	jr.Data = nil
+	jr.Params = nil
+	jr.Cookies = nil
+	jr.IsRedirect = true
+	jr.IsVerifySSL = false
+	jr.HttpVersion = 1
+	jr.IsKeepAlive = false
+	jr.CAPath = "cas"
+	jr.transport = &http.Transport{}
+	jr.cli = &http.Client{}
 }
 
 func (jr *jnrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
@@ -205,35 +232,47 @@ func (jr *jnrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err
 		reader = nil
 	}
 
-	jr.req, err = http.NewRequest("POST", reqUrl, reader)
+	req2, err := http.NewRequest("POST", reqUrl, reader)
 	if err != nil {
 		return nil, err
 	}
 	// 设置headers
 	for k, v := range jr.Headers {
 		for _, v2 := range v {
-			jr.req.Header.Add(k, v2)
+			req2.Header.Add(k, v2)
 		}
 	}
 	// 设置cookies
 	u, err := url.Parse(reqUrl)
 	jr.cli.Jar.SetCookies(u, jr.Cookies)
+	// 设置是否转发
+	if !jr.IsRedirect {
+		jr.cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
 	// 设置params
 	if jr.Params != nil {
-		query := jr.req.URL.Query()
+		query := req2.URL.Query()
 		for paramKey, paramValue := range jr.Params {
 			//query.Add(paramKey, paramValue)
 			for _, v2 := range paramValue {
 				query.Add(paramKey, v2)
 			}
 		}
-		jr.req.URL.RawQuery = query.Encode()
+		req2.URL.RawQuery = query.Encode()
 	}
 	// 设置transport
 	jr.cli.Transport = jr.transport
 	// 设置connection
-	jr.req.Close = !jr.IsKeepAlive
-	resp.Resp, err = jr.cli.Do(jr.req)
+	req2.Close = !jr.IsKeepAlive
+	resp.Resp, err = jr.cli.Do(req2)
+	if err == nil {
+		// 清空cookie
+		if !jr.IsKeepCookie {
+			jr.cli.Jar, err = cookiejar.New(nil)
+		}
+	}
 	return
 }
 
