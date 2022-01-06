@@ -33,8 +33,8 @@ func CGet(reqUrl string, d ...interface{}) (jre *jrequest) {
 		}
 	}
 	jre.method = "GET"
-	// 设置transport
-	jre.cli.Transport = jre.transport
+	//// 设置transport
+	//jre.cli.Transport = jre.transport
 	return
 }
 
@@ -57,8 +57,8 @@ func CPost(reqUrl string, d ...interface{}) (jre *jrequest) {
 		}
 	}
 	jre.method = "POST"
-	// 设置transport
-	jre.cli.Transport = jre.transport
+	//// 设置transport
+	//jre.cli.Transport = jre.transport
 	return
 }
 
@@ -245,7 +245,9 @@ func (jr *jrequest) CSetHttpVersion(version int) (jre *jrequest) {
 		//client.transport = httpTransport
 	case 2:
 		// 升级到http2
-		http2.ConfigureTransport(jr.transport)
+		//http2.ConfigureTransport(jr.transport)
+		//tmpTransport,_ := http2.ConfigureTransports(jr.transport)
+		//jr.transport = tmpTransport
 		//client.transport = httpTransport
 	}
 	return jr
@@ -348,25 +350,28 @@ func (jre *jrequest) CDo() (resp *jresponse, err error) {
 	jre.req.Close = !jre.IsKeepAlive
 	resp = &jresponse{}
 	//jlog.Info(jre.req)
+	// 设置transport
+	backTransport := jre.transport
+	//tmp := *jr.transport
+	//backTransport := &tmp
+	if jre.HttpVersion == 2 {
+		// 判断当前是否已经为http2
+		alreadyH2 := false
+		for _, v := range jre.transport.TLSClientConfig.NextProtos {
+			if v == "h2" {
+				alreadyH2 = true
+				break
+			}
+		}
+		if !alreadyH2 {
+			err = http2.ConfigureTransport(backTransport)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	jre.cli.Transport = backTransport
 	resp.Resp, err = jre.cli.Do(jre.req)
-	//jre = &jrequest{
-	//	Proxy:   "",
-	//	Timeout: 60,
-	//	Headers: map[string][]string{
-	//		"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:86.0) Gecko/20100101 Firefox/86.0"},
-	//	},
-	//	Data:        nil,
-	//	Params:      nil,
-	//	Cookies:     nil,
-	//	IsRedirect:  false,
-	//	IsVerifySSL: false,
-	//	HttpVersion: 1,
-	//	IsKeepAlive: false,
-	//	CAPath:      "cas",
-	//	//Url:         "",
-	//	transport: &http.Transport{},
-	//	cli:       &http.Client{},
-	//}
 	resetJr(jre)
 	jrePool.Put(jre)
 	return

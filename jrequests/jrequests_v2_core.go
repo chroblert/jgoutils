@@ -33,8 +33,9 @@ var jrePool = &sync.Pool{New: func() interface{} {
 		IsKeepCookie: false,
 		CAPath:       "cas",
 		//Url:         "",
-		transport: &http.Transport{},
-		cli:       &http.Client{},
+		transport:  &http.Transport{},
+		transport2: &http2.Transport{},
+		cli:        &http.Client{},
 	}
 }}
 
@@ -55,6 +56,7 @@ type jrequest struct {
 	CAPath       string
 	Url          string
 	transport    *http.Transport
+	transport2   *http2.Transport
 	cli          *http.Client
 	req          *http.Request
 	method       string
@@ -77,21 +79,12 @@ type jnrequest struct {
 	CAPath       string
 	Url          string
 	transport    *http.Transport
+	transport2   *http2.Transport
 	cli          *http.Client
 	req          *http.Request
 	method       string
 }
 
-//type requestConfig struct {
-//	Proxy       string //func(*http.Request) (*url.URL, error)
-//	Timeout     int
-//	Data        []byte
-//	IsRedirect  bool
-//	IsVerifySSL bool
-//	HttpVersion int
-//	IsKeepAlive bool
-//	CAPath      string
-//}
 type jresponse struct {
 	Resp *http.Response
 }
@@ -183,7 +176,27 @@ func (jr *jnrequest) Get(reqUrl string, d ...interface{}) (resp *jresponse, err 
 		req2.URL.RawQuery = query.Encode()
 	}
 	// 设置transport
-	jr.cli.Transport = jr.transport
+	// TODO 做个备份 没起作用??? new一次，只能为 http/1.1或http/2
+	backTransport := jr.transport
+	//tmp := *jr.transport
+	//backTransport := &tmp
+	if jr.HttpVersion == 2 {
+		// 判断当前是否已经为http2
+		alreadyH2 := false
+		for _, v := range jr.transport.TLSClientConfig.NextProtos {
+			if v == "h2" {
+				alreadyH2 = true
+				break
+			}
+		}
+		if !alreadyH2 {
+			err = http2.ConfigureTransport(backTransport)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	jr.cli.Transport = backTransport
 	// 设置connection
 	req2.Close = !jr.IsKeepAlive
 	resp.Resp, err = jr.cli.Do(req2)
@@ -212,6 +225,7 @@ func resetJr(jr *jrequest) {
 	jr.IsKeepAlive = false
 	jr.CAPath = "cas"
 	jr.transport = &http.Transport{}
+	jr.transport2 = &http2.Transport{}
 	jr.cli = &http.Client{}
 }
 
@@ -263,7 +277,27 @@ func (jr *jnrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err
 		req2.URL.RawQuery = query.Encode()
 	}
 	// 设置transport
-	jr.cli.Transport = jr.transport
+	// TODO 做个备份 没起作用??? new一次，只能为 http/1.1或http/2
+	backTransport := jr.transport
+	//tmp := *jr.transport
+	//backTransport := &tmp
+	if jr.HttpVersion == 2 {
+		// 判断当前是否已经为http2
+		alreadyH2 := false
+		for _, v := range jr.transport.TLSClientConfig.NextProtos {
+			if v == "h2" {
+				alreadyH2 = true
+				break
+			}
+		}
+		if !alreadyH2 {
+			err = http2.ConfigureTransport(backTransport)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	jr.cli.Transport = backTransport
 	// 设置connection
 	req2.Close = !jr.IsKeepAlive
 	resp.Resp, err = jr.cli.Do(req2)
@@ -284,8 +318,6 @@ func (jr *jnrequest) SetProxy(proxy string) {
 	// TODO proxy格式校验
 	_, err := url.Parse(proxy)
 	if err != nil {
-		//jr.transport.Proxy = nil
-		//jlog.Error(err)
 		return
 	}
 	jr.Proxy = proxy
@@ -296,7 +328,6 @@ func (jr *jnrequest) SetProxy(proxy string) {
 	} else {
 		jr.transport.Proxy = nil
 	}
-
 }
 
 // 设置超时
@@ -444,15 +475,6 @@ func (jr *jnrequest) SetHttpVersion(version int) {
 		return
 	}
 	jr.HttpVersion = version
-	// 设置httptransport
-	switch jr.HttpVersion {
-	case 1:
-		//client.transport = httpTransport
-	case 2:
-		// 升级到http2
-		http2.ConfigureTransport(jr.transport)
-		//client.transport = httpTransport
-	}
 }
 
 // 设置是否验证ssl
