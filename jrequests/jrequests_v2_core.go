@@ -310,6 +310,87 @@ func (jr *jnrequest) Post(reqUrl string, d ...interface{}) (resp *jresponse, err
 	return
 }
 
+func (jr *jnrequest) Put(reqUrl string, d ...interface{}) (resp *jresponse, err error) {
+	resp = &jresponse{}
+	//jr.Url = reqUrl
+	var reader io.Reader
+	if len(d) > 0 {
+		switch d[0].(type) {
+		case []byte:
+			reader = bytes.NewReader(d[0].([]byte))
+		case string:
+			reader = strings.NewReader(d[0].(string))
+		default:
+			reader = nil
+		}
+	} else {
+		reader = nil
+	}
+
+	req2, err := http.NewRequest("PUT", reqUrl, reader)
+	if err != nil {
+		return nil, err
+	}
+	// 设置headers
+	for k, v := range jr.Headers {
+		for _, v2 := range v {
+			req2.Header.Add(k, v2)
+		}
+	}
+	// 设置cookies
+	u, err := url.Parse(reqUrl)
+	jr.cli.Jar.SetCookies(u, jr.Cookies)
+	// 设置是否转发
+	if !jr.IsRedirect {
+		jr.cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+	// 设置params
+	if jr.Params != nil {
+		query := req2.URL.Query()
+		for paramKey, paramValue := range jr.Params {
+			//query.Add(paramKey, paramValue)
+			for _, v2 := range paramValue {
+				query.Add(paramKey, v2)
+			}
+		}
+		req2.URL.RawQuery = query.Encode()
+	}
+	// 设置transport
+	// TODO 做个备份 没起作用??? new一次，只能为 http/1.1或http/2
+	backTransport := jr.transport
+	//tmp := *jr.transport
+	//backTransport := &tmp
+	if jr.HttpVersion == 2 {
+		// 判断当前是否已经为http2
+		alreadyH2 := false
+		for _, v := range jr.transport.TLSClientConfig.NextProtos {
+			if v == "h2" {
+				alreadyH2 = true
+				break
+			}
+		}
+		if !alreadyH2 {
+			err = http2.ConfigureTransport(backTransport)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	jr.cli.Transport = backTransport
+	// 设置connection
+	req2.Close = !jr.IsKeepAlive
+	resp.Resp, err = jr.cli.Do(req2)
+	if err == nil {
+		// 清空cookie
+		if !jr.IsKeepCookie {
+			jr.cli.Jar, err = cookiejar.New(nil)
+		}
+	}
+	return
+}
+
 // 设置代理
 func (jr *jnrequest) SetProxy(proxy string) {
 	if jr == nil {

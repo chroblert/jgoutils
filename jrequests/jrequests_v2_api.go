@@ -61,6 +61,29 @@ func CPost(reqUrl string, d ...interface{}) (jre *jrequest) {
 	//jre.cli.Transport = jre.transport
 	return
 }
+func CPut(reqUrl string, d ...interface{}) (jre *jrequest) {
+	var err error
+	jre = jrePool.Get().(*jrequest)
+	jre.cli.Jar, err = cookiejar.New(nil)
+	if err != nil {
+		return nil
+	}
+	jre.Url = reqUrl
+	if len(d) > 0 {
+		switch d[0].(type) {
+		case []byte:
+			jre.Data = d[0].([]byte)
+		case string:
+			jre.Data = []byte(d[0].(string))
+		default:
+			jre.Data = []byte(nil)
+		}
+	}
+	jre.method = "PUT"
+	//// 设置transport
+	//jre.cli.Transport = jre.transport
+	return
+}
 
 // 设置代理
 func (jr *jrequest) CSetProxy(proxy string) (jre *jrequest) {
