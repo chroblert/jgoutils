@@ -7,7 +7,6 @@ import (
 	"github.com/chroblert/jgoutils/jconv"
 	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jmath"
-	"github.com/chroblert/jgoutils/jrequests"
 	"io"
 	"os"
 	"strconv"
@@ -73,6 +72,7 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode
 	return result
 }
 
+// TODO
 func singleIntruder(reqBytes []byte, isUseSSL bool, proxy string) (statuscode int, headers map[string][]string, body []byte, err error) {
 	hm := New()
 	hm.InitWithBytes(reqBytes)
@@ -85,7 +85,7 @@ func singleIntruder(reqBytes []byte, isUseSSL bool, proxy string) (statuscode in
 	} else {
 		hm.reqUrl = "https://" + hm.reqHost + hm.reqPath
 	}
-	statuscode, headers, body, err = jrequests.Get(hm.reqUrl, jrequests.SetHeaders(hm.reqHeaders), jrequests.SetIsVerifySSL(hm.isVerifySSL), jrequests.SetParams(hm.reqParams), jrequests.SetData(hm.reqData), jrequests.SetProxy(hm.getProxy()))
+
 	hm.Clean()
 	return
 	//return tmp["0"][0].(int), tmp["0"][1].(map[string][]string), tmp["0"][2].([]byte), fmt.Errorf("%v", tmp["0"][3])

@@ -12,7 +12,7 @@ import (
 //	maxSize = amaxSize // 单个文件最大大小
 //	maxAge = amaxAge   // 单个文件保存2天
 //	LogCount = alogCount
-//	applog = NewLogger(logpath)
+//	applog = newLogger(logpath)
 //	defer applog.Flush()
 //	applog.SetLogLevel(DEBUG)
 //	applog.setVerbose(true)
@@ -46,12 +46,12 @@ var (
 	//maxAge              = jconfig.Conf.LogConfig.MaxStoreDays // 180 天
 	//maxSize       int64 = jconfig.Conf.LogConfig.MaxSize      // 256 MB
 	//LogCount            = jconfig.Conf.LogConfig.LogCount
-	//fishLogger           = NewLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
-	fishLogger = NewLogger(LogConfig{
+	//fishLogger           = newLogger(jconfig.Conf.LogConfig.LogFileName) // 默认实例
+	fishLogger = newLogger(LogConfig{
 		BufferSize:        2048,
 		FlushInterval:     10 * time.Second,
 		MaxStoreDays:      -1,
-		MaxSizePerLogFile: 204800000,
+		MaxSizePerLogFile: 512000000,
 		LogCount:          -1,
 		LogFullPath:       "logs/app.log",
 		Lv:                DEBUG,

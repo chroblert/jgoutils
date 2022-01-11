@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func init() {
@@ -21,7 +22,7 @@ func (lv logLevel) Str() string {
 	return "[N]"
 }
 
-// NewLogger 实例化logger
+// newLogger 实例化logger
 // path 日志完整路径 eg:logs/app.log
 //func NewLogger_old(fullPath string) *FishLogger {
 //	fl := new(FishLogger)
@@ -46,9 +47,9 @@ func (lv logLevel) Str() string {
 //	return fl
 //}
 
-// NewLogger 实例化logger
+// newLogger 实例化logger
 // path 日志完整路径 eg:logs/app.log
-func NewLogger(logConf LogConfig) *FishLogger {
+func newLogger(logConf LogConfig) *FishLogger {
 	fl := new(FishLogger)
 	// 日志配置
 	fl.bufferSize = logConf.BufferSize
@@ -77,4 +78,26 @@ func NewLogger(logConf LogConfig) *FishLogger {
 	go fl.daemon(signalChannel)
 	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 	return fl
+}
+
+// 新建一个jlog示例
+// 若不传入LogConfig，则使用默认的只进行创建。每十秒将日志写入文件，不限制存储天数和文件个数，单日志文件大小500MB，在控制台显示，每次运行不新建日志文件
+// 否则，根据传入的LogConfig创建jlog示例
+func New(logConfs ...LogConfig) *FishLogger {
+	if len(logConfs) == 1 {
+		logConf := logConfs[0]
+		return newLogger(logConf)
+	}
+	return newLogger(LogConfig{
+		BufferSize:        2048,
+		FlushInterval:     10 * time.Second,
+		MaxStoreDays:      -1,
+		MaxSizePerLogFile: 512000000,
+		LogCount:          -1,
+		LogFullPath:       "logs/app.log",
+		Lv:                DEBUG,
+		UseConsole:        true,
+		Verbose:           true,
+		InitCreateNewLog:  false,
+	})
 }

@@ -25,11 +25,11 @@ type asyncTask struct {
 	TaskStatus *taskStatus
 }
 
-// Async 异步执行对象
-type Async struct {
-	total     int  // 总共有多少个任务
-	count     int  // 需要执行的任务数量
-	taskCount int  // 正在执行的任务数量
+// async 异步执行对象
+type async struct {
+	total     int // 总共有多少个任务
+	count     int // 需要执行的任务数量
+	taskCount int // 正在执行的任务数量
 	tasks     map[string]asyncTask
 	mu        *sync.RWMutex
 
@@ -38,38 +38,39 @@ type Async struct {
 }
 
 // New 创建一个新的异步执行对象
-func New() Async {
-	return Async{
-		tasks: make(map[string]asyncTask),
-		mu: new(sync.RWMutex),
+func New() async {
+	return async{
+		tasks:       make(map[string]asyncTask),
+		mu:          new(sync.RWMutex),
 		tasksResult: make(map[string][]interface{}),
 	}
 }
 
 //GetTotal 获取总共的任务数
-func (a *Async) GetTotal() int {
+func (a *async) GetTotal() int {
 	return a.total
 }
 
 //GetCount 获取需要执行的任务数量
-func (a *Async) GetCount() int {
+func (a *async) GetCount() int {
 	return a.count
 }
 
-func (a *Async) addTaskCount() {
+func (a *async) addTaskCount() {
 	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.taskCount++
-	a.mu.Unlock()
+
 }
 
-func (a *Async) subTaskCount() {
+func (a *async) subTaskCount() {
 	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.taskCount--
-	a.mu.Unlock()
 }
 
 // 若传进来的值小于1，则使用配置文件中的默认值
-func (a *Async) wait(taskMaxLimit int) {
+func (a *async) wait(taskMaxLimit int) {
 	if taskMaxLimit < 1 {
 		taskMaxLimit = jconfig.Conf.AsyncConfig.TaskMaxLimit
 	}
@@ -80,9 +81,9 @@ func (a *Async) wait(taskMaxLimit int) {
 		a.mu.RLock()
 		tmpTaskCount := a.taskCount
 		tmpTotal := a.total
-		doneTaskCount := a.total-a.count
+		doneTaskCount := a.total - a.count
 		a.mu.RUnlock()
-		if tmpTaskCount == tmpPreVal{
+		if tmpTaskCount == tmpPreVal {
 			continue
 		}
 		tmpPreVal = tmpTaskCount
@@ -91,9 +92,9 @@ func (a *Async) wait(taskMaxLimit int) {
 		//a.mu.RUnlock()
 		if tmpTaskCount < taskMaxLimit {
 			break
-		}else{
+		} else {
 			//jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskMaxLimit,doneTaskCount)
-			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v/%v\r",  taskMaxLimit,doneTaskCount,tmpTotal)
+			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v/%v\r", taskMaxLimit, doneTaskCount, tmpTotal)
 		}
 	}
 }
@@ -105,7 +106,7 @@ type taskStatus struct {
 }
 
 // 将毫秒级时间戳转换为时间字符串2006-01-02 15:04:05.000
-func (a *Async) timeStampToStr(nanotimestamp int64) string {
+func (a *async) timeStampToStr(nanotimestamp int64) string {
 	if nanotimestamp == 0 {
 		return "0"
 	}
@@ -117,7 +118,8 @@ func (a *Async) timeStampToStr(nanotimestamp int64) string {
 // verbose: 详细模式，显示任务的开始结束时间
 // status: 显示指定状态的任务
 // taskName: 显示某任务的状态
-func (a *Async) GetStatus(taskName string, verbose bool) {
+func (a *async) GetStatus(taskName string, verbose bool) {
+	// TODO 这里应该可以使用协程并发输出
 	for k, v := range a.tasks {
 		//jlog.Info(k, "Status:", a.getDspByCode(v.TaskStatus.taskStatus), ",Begin:", a.timeStampToStr(v.TaskStatus.taskBegTime), ",End:", a.timeStampToStr(v.TaskStatus.taskEndTime))
 		jlog.Debugf("%-5s Status:%-10s, Begin:%.24s ,End:%.24s \n", k, a.getDspByCode(v.TaskStatus.taskStatus), a.timeStampToStr(v.TaskStatus.taskBegTime), a.timeStampToStr(v.TaskStatus.taskEndTime))
@@ -126,17 +128,21 @@ func (a *Async) GetStatus(taskName string, verbose bool) {
 }
 
 // GetTasksResult 获取所有任务的执行结果
-func (a *Async) GetTasksResult() map[string][]interface{} {
+func (a *async) GetTasksResult() map[string][]interface{} {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return a.tasksResult
 }
 
 // GetTaskResult 获取任务的某个执行结果
-func (a *Async) GetTaskResult(taskName string) []interface{} {
+func (a *async) GetTaskResult(taskName string) []interface{} {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return a.tasksResult[taskName]
 }
 
 // 等待直到全部任务执行完成
-func (a *Async) Wait() {
+func (a *async) Wait() {
 	var tmpPreVal int
 	tmpPreVal = -1
 	for {
@@ -145,10 +151,9 @@ func (a *Async) Wait() {
 		tmpTotal := a.total
 		//doneTaskCount := a.total-a.count
 		a.mu.RUnlock()
-		if tmpCount == tmpPreVal{
+		if tmpCount == tmpPreVal {
 			continue
 		}
-		//jlog.Debug("tmpCount:",tmpCount,"tmpPreVal:",tmpPreVal)
 		tmpPreVal = tmpCount
 		if tmpCount < 1 {
 			break
@@ -157,13 +162,13 @@ func (a *Async) Wait() {
 		jlog.Infof("%d/%d\r", tmpTotal-tmpCount, tmpTotal)
 	}
 	a.mu.RLock()
-	doneTaskCount := a.total-a.count
+	doneTaskCount := a.total - a.count
 	a.mu.RUnlock()
 	jlog.Infof("%d/%d,所有task执行完毕\n", doneTaskCount, a.total)
 }
 
 // 根据code获取对应的状态描述
-func (a *Async) getDspByCode(code int) string {
+func (a *async) getDspByCode(code int) string {
 	switch code {
 	case 0:
 		return "queue"
@@ -181,7 +186,7 @@ func (a *Async) getDspByCode(code int) string {
 // name 任务名，结果返回时也将放在任务名中
 // handler 任务执行函数，将需要被执行的函数导入到程序中
 // params 任务执行函数所需要的参数
-func (a *Async) Add(name string, handler interface{}, printHandler interface{}, params ...interface{}) bool {
+func (a *async) Add(name string, handler interface{}, printHandler interface{}, params ...interface{}) bool {
 	// 用来确保key的唯一性
 	a.mu.RLock()
 	_, ok := a.tasks[name]
@@ -240,7 +245,7 @@ func (a *Async) Add(name string, handler interface{}, printHandler interface{}, 
 
 // Run 任务执行函数，成功时将返回一个用于接受结果的channel
 // 在所有异步任务都运行完成时，结果channel将会返回一个map[string][]interface{}的结果。
-func (a *Async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool) {
+func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool) {
 	if a.count < 1 {
 		return nil, false
 	}
@@ -329,7 +334,7 @@ func (a *Async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 }
 
 // Clean 清空任务队列.
-func (a *Async) Clean() {
+func (a *async) Clean() {
 	a.count = 0
 	a.total = 0
 	a.tasks = make(map[string]asyncTask)

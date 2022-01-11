@@ -39,7 +39,7 @@ func mainA() {
 		}(i)
 	}
 	wg.Wait()
-	jlog2 := jlog.NewLogger(jlog.LogConfig{
+	jlog2 := jlog.New(jlog.LogConfig{
 		BufferSize:        2048,
 		FlushInterval:     3 * time.Second,
 		MaxStoreDays:      5,
