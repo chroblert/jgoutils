@@ -349,6 +349,7 @@ func (fl *FishLogger) daemon(stopChannel chan os.Signal) {
 		case <-stopChannel:
 			//fmt.Println("监测到信号")
 			fl.Flush()
+			os.Exit(-1)
 			//fmt.Println("结束")
 		}
 	}
