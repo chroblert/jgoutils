@@ -51,7 +51,7 @@ func main() {
 	////	res := <-chans
 	////	//fmt.Println(len(res))
 	////	// 这里最好判断下是否所有的异步请求都已经执行成功
-	////	if len(res) == asyncobj.GetTotal() {
+	////	if len(res) == asyncobj.GetTaskAllTotal() {
 	////
 	////	} else {
 	////		log.Println("jasync not execution all task")
@@ -62,9 +62,9 @@ func main() {
 	////fmt.Println(<-chans)
 	////fmt.Println(len(chans))
 	//time.Sleep(1*time.Second)
-	//asyncobj.GetStatus("false",false)
+	//asyncobj.PrintAllTaskStatus("false",false)
 	//asyncobj.Wait()
-	//asyncobj.GetStatus("false",false)
+	//asyncobj.PrintAllTaskStatus("false",false)
 	//// 清除掉本次操作的所有数据,方便后续继续使用async对象
 	//asyncobj.Clean()
 
@@ -101,7 +101,7 @@ func main() {
 	//jasyncobj.Run()
 	////jhttpobj.Repeat()
 	//jasyncobj.Wait()
-	////jasyncobj.GetStatus("",false)
+	////jasyncobj.PrintAllTaskStatus("",false)
 	//jasyncobj.Clean()
 	//jhttpobj.Repeat(10)
 	//jhttpobj.Intrude(true)

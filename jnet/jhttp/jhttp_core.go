@@ -2,7 +2,6 @@ package jhttp
 
 import (
 	"github.com/chroblert/jgoutils/jconfig"
-	"github.com/chroblert/jgoutils/jlog"
 	"net/url"
 	"strings"
 )
@@ -22,15 +21,37 @@ type httpMsg struct {
 	proxy     string
 	//reqBytes []byte // 请求报文的字节数组
 	//wordFiles []string // 字典文件切片
+	verbose bool  // 是否显示debug信息
+	timeout int64 // 延时时间，单位毫秒
 }
 type intruderData struct {
 	reqBytes  []byte   // 请求报文的字节数组
 	wordFiles []string // 字典文件切片
 }
 
-func New() *httpMsg {
+func New(verbose ...bool) *httpMsg {
+	if len(verbose) == 0 {
+		jHttpLog.SetUseConsole(false)
+		return &httpMsg{
+			reqMethod:   "GET",
+			reqHost:     "",
+			reqUrl:      "/",
+			reqPath:     "/",
+			reqParams:   make(map[string]string),
+			reqHeaders:  make(map[string]string),
+			reqData:     make([]byte, 0),
+			isVerifySSL: false,
+
+			intruData: &intruderData{
+				reqBytes:  make([]byte, 0),
+				wordFiles: make([]string, 0),
+			},
+			verbose: false,
+		}
+	}
+	jHttpLog.SetUseConsole(verbose[0])
 	return &httpMsg{
-		reqMethod:   "Get",
+		reqMethod:   "GET",
 		reqHost:     "",
 		reqUrl:      "/",
 		reqPath:     "/",
@@ -43,7 +64,9 @@ func New() *httpMsg {
 			reqBytes:  make([]byte, 0),
 			wordFiles: make([]string, 0),
 		},
+		verbose: verbose[0],
 	}
+
 }
 
 func (hm *httpMsg) InitWithFile(filename string) {
@@ -62,8 +85,13 @@ func (hm *httpMsg) getInfoFromReqLine(reqLine []string) (reqMethod, reqPath stri
 		queryString := reqLine[1][strings.Index(reqLine[1], "?")+1:]
 		for _, param := range strings.Split(queryString, "&") {
 			idx := strings.Index(param, "=")
-			reqParams[param[:idx]] = param[idx+1:]
+			if idx != -1 {
+				reqParams[param[:idx]] = param[idx+1:]
+			} else {
+				reqParams[param] = ""
+			}
 		}
+
 	} else {
 		reqPath = reqLine[1]
 
@@ -102,17 +130,17 @@ func (hm *httpMsg) SetHeader(header map[string]string) {
 }
 
 // 设置URL，包含querystring
-func (hm *httpMsg) SetURL(requrl string) error{
+func (hm *httpMsg) SetURL(requrl string) error {
 	urlobj, err := url.ParseRequestURI(requrl)
 	if err != nil {
-		jlog.Error("错误", err)
+		jHttpLog.Error("错误", err)
 		return err
 	}
-	//jlog.Debug(urlobj.Scheme)
-	//jlog.Debug(urlobj.Host)
-	//jlog.Debug(urlobj.Path)
-	//jlog.Debug(urlobj.Query())
-	//jlog.Debug(urlobj.ForceQuery)
+	//jHttpLog.Debug(urlobj.Scheme)
+	//jHttpLog.Debug(urlobj.Host)
+	//jHttpLog.Debug(urlobj.Path)
+	//jHttpLog.Debug(urlobj.Query())
+	//jHttpLog.Debug(urlobj.ForceQuery)
 	if urlobj.Path == "" {
 		hm.reqPath = "/"
 	} else {
@@ -128,7 +156,7 @@ func (hm *httpMsg) SetURL(requrl string) error{
 		hm.isUseSSL = false
 	}
 	return nil
-	//jlog.Debug(hm.reqParams)
+	//jHttpLog.Debug(hm.reqParams)
 }
 
 // 设置是否验证SSL
@@ -144,6 +172,11 @@ func (hm *httpMsg) SetIsUseSSL(b bool) {
 // 设置目标站点使用的代理
 func (hm *httpMsg) SetProxy(proxy string) {
 	hm.proxy = proxy
+}
+
+// 设置超时时间,单位毫秒
+func (hm *httpMsg) SetTimeout(timeout int64) {
+	hm.timeout = timeout
 }
 
 // 获取代理
@@ -162,7 +195,7 @@ func (hm *httpMsg) SetWordfiles(wordfiles ...string) {
 	for _, v := range wordfiles {
 		hm.intruData.wordFiles = append(hm.intruData.wordFiles, v)
 	}
-	//jlog.Debug(hm.intruData.wordFiles)
+	//jHttpLog.Debug(hm.intruData.wordFiles)
 }
 
 func (hm *httpMsg) Clean() {

@@ -1,5 +1,3 @@
-// +build ignore
-
 package jrequests
 
 //func Get(requrl string,opts...OptionInterface) (statuscode int,headers map[string][]string,body []byte,err error){

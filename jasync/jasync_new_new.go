@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package jasync
 
 // 异步执行类，提供异步执行的功能，可快速方便的开启异步执行
@@ -5,10 +8,10 @@ package jasync
 // 通过调用 Add 函数来向异步任务列表中添加新的任务
 // 通过调用 Run 函数来获取一个接收返回的channel，当返回结果时将会返回一个map[string][]interface{}
 // 的结果集，包括每个异步函数所返回的所有的结果
-// 通过调用 GetStatus() 来获取任务执行的状态
-// 通过调用 GetTotal() 来获取所有任务的数量
+// 通过调用 PrintAllTaskStatus() 来获取任务执行的状态
+// 通过调用 GetTaskAllTotal() 来获取所有任务的数量
 import (
-	"github.com/chroblert/jgoutils/jconfig"
+	"fmt"
 	"github.com/chroblert/jgoutils/jlog"
 	"reflect"
 	"sync"
@@ -27,11 +30,11 @@ type asyncTask struct {
 
 // async 异步执行对象
 type async struct {
-	total     int // 总共有多少个任务
-	count     int // 需要执行的任务数量
-	taskCount int // 正在执行的任务数量
-	tasks     map[string]asyncTask
-	mu        *sync.RWMutex
+	taskAllTotal    int // 总共有多少个任务
+	taskNeedDoCount int // 需要执行的任务数量
+	taskDoingCount  int // 正在执行的任务数量
+	tasks           map[string]*asyncTask
+	mu              *sync.RWMutex
 
 	//210519：获取异步执行结果
 	tasksResult map[string][]interface{}
@@ -40,61 +43,63 @@ type async struct {
 // New 创建一个新的异步执行对象
 func New() async {
 	return async{
-		tasks:       make(map[string]asyncTask),
+		tasks:       make(map[string]*asyncTask),
 		mu:          new(sync.RWMutex),
 		tasksResult: make(map[string][]interface{}),
 	}
 }
 
-//GetTotal 获取总共的任务数
-func (a *async) GetTotal() int {
-	return a.total
+//GetTaskAllTotal 获取总共的任务数
+func (a *async) GetTaskAllTotal() int {
+	return a.taskAllTotal
 }
 
-//GetCount 获取需要执行的任务数量
-func (a *async) GetCount() int {
-	return a.count
+//GetTaskNeedDoCount 获取需要执行的任务数量
+func (a *async) GetTaskNeedCount() int {
+	return a.taskNeedDoCount
 }
 
-func (a *async) addTaskCount() {
+func (a *async) addTaskDoingCount() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.taskCount++
+	a.taskDoingCount++
 
 }
 
-func (a *async) subTaskCount() {
+func (a *async) subTaskDoingCount() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.taskCount--
+	a.taskDoingCount--
 }
 
-// 若传进来的值小于1，则使用配置文件中的默认值
-func (a *async) wait(taskMaxLimit int) {
-	if taskMaxLimit < 1 {
-		taskMaxLimit = jconfig.Conf.AsyncConfig.TaskMaxLimit
+// 若传进来的值小于1，则使用默认值
+func (a *async) wait(taskParaCountMaxLimit int) {
+	if taskParaCountMaxLimit < 1 {
+		taskParaCountMaxLimit = jasyncConf.TaskMaxLimit
 	}
 	var tmpPreVal int
 	tmpPreVal = -1
 	for {
 		// 如果当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
 		a.mu.RLock()
-		tmpTaskCount := a.taskCount
-		tmpTotal := a.total
-		doneTaskCount := a.total - a.count
+		doingTaskCount := a.taskDoingCount
+		taskTotal := a.taskAllTotal
+		doneTaskCount := a.taskAllTotal - a.taskNeedDoCount
 		a.mu.RUnlock()
-		if tmpTaskCount == tmpPreVal {
+		// 若无变化，则进行下次循环
+		if doingTaskCount == tmpPreVal {
 			continue
 		}
-		tmpPreVal = tmpTaskCount
+		tmpPreVal = doingTaskCount
 		//a.mu.RLock()
-		//doneTaskCount := a.total-a.count
+		//doneTaskCount := a.taskAllTotal-a.taskNeedDoCount
 		//a.mu.RUnlock()
-		if tmpTaskCount < taskMaxLimit {
+		// 如果正在执行的任务数量达到设定的最大并行任务数量限制，则一直等待
+		if doingTaskCount < taskParaCountMaxLimit {
 			break
 		} else {
-			//jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskMaxLimit,doneTaskCount)
-			jlog.Debugf("达到同时最大任务量限制：taskMaxLimit: %v,taskDoneCount: %v/%v\r", taskMaxLimit, doneTaskCount, tmpTotal)
+			//jlog.Debugf("达到同时最大任务量限制：taskParaCountMaxLimit: %v,taskDoneCount: %v\r\x1b[K",  taskParaCountMaxLimit,doneTaskCount)
+			jlog.Debugf("达到同时最大任务量限制：taskParaCountMaxLimit: %v,taskDoneCount: %v/%v\r", taskParaCountMaxLimit, doneTaskCount, taskTotal)
 		}
 	}
 }
@@ -114,7 +119,7 @@ func (a *async) timeStampToStr(nanotimestamp int64) string {
 	return timeStr
 }
 
-// GetStatus 获取执行状态
+// PrintAllTaskStatus 获取执行状态
 // verbose: 详细模式，显示任务的开始结束时间
 // status: 显示指定状态的任务
 // taskName: 显示某任务的状态
@@ -147,9 +152,9 @@ func (a *async) Wait() {
 	tmpPreVal = -1
 	for {
 		a.mu.RLock()
-		tmpCount := a.count
-		tmpTotal := a.total
-		//doneTaskCount := a.total-a.count
+		tmpCount := a.taskNeedDoCount
+		tmpTotal := a.taskAllTotal
+		//doneTaskCount := a.taskAllTotal-a.taskNeedDoCount
 		a.mu.RUnlock()
 		if tmpCount == tmpPreVal {
 			continue
@@ -162,9 +167,9 @@ func (a *async) Wait() {
 		jlog.Infof("%d/%d\r", tmpTotal-tmpCount, tmpTotal)
 	}
 	a.mu.RLock()
-	doneTaskCount := a.total - a.count
+	doneTaskCount := a.taskAllTotal - a.taskNeedDoCount
 	a.mu.RUnlock()
-	jlog.Infof("%d/%d,所有task执行完毕\n", doneTaskCount, a.total)
+	jlog.Infof("%d/%d,所有task执行完毕\n", doneTaskCount, a.taskAllTotal)
 }
 
 // 根据code获取对应的状态描述
@@ -186,22 +191,23 @@ func (a *async) getDspByCode(code int) string {
 // name 任务名，结果返回时也将放在任务名中
 // handler 任务执行函数，将需要被执行的函数导入到程序中
 // params 任务执行函数所需要的参数
-func (a *async) Add(name string, handler interface{}, printHandler interface{}, params ...interface{}) bool {
+func (a *async) Add(name string, funcHandler interface{}, printHandler interface{}, params ...interface{}) (bool, error) {
+	task := new(asyncTask)
 	// 用来确保key的唯一性
 	a.mu.RLock()
+	// 如果ok表示要添加的任务已经存在
 	_, ok := a.tasks[name]
 	a.mu.RUnlock()
 	if ok {
-		return false
+		return false, fmt.Errorf(name + " 任务已存在!")
 	}
-	handlerValue := reflect.ValueOf(handler)
+	handlerValue := reflect.ValueOf(funcHandler)
 	// 判断传入的是否为Func类型
 	if handlerValue.Kind() == reflect.Func {
 		// 传入了多少个参数
 		paramNum := len(params)
 		if printHandler != nil && reflect.ValueOf(printHandler).Kind() == reflect.Func {
-			a.mu.Lock()
-			a.tasks[name] = asyncTask{
+			task = &asyncTask{
 				ReqHandler:   handlerValue,
 				PrintHandler: reflect.ValueOf(printHandler),
 				Params:       make([]reflect.Value, paramNum),
@@ -211,10 +217,20 @@ func (a *async) Add(name string, handler interface{}, printHandler interface{}, 
 					taskEndTime: 0,
 				},
 			}
-			a.mu.Unlock()
+			//a.mu.Lock()
+			//a.tasks[name] = &asyncTask{
+			//	ReqHandler:   handlerValue,
+			//	PrintHandler: reflect.ValueOf(printHandler),
+			//	Params:       make([]reflect.Value, paramNum),
+			//	TaskStatus: &taskStatus{
+			//		taskStatus:  0,
+			//		taskBegTime: 0,
+			//		taskEndTime: 0,
+			//	},
+			//}
+			//a.mu.Unlock()
 		} else {
-			a.mu.Lock()
-			a.tasks[name] = asyncTask{
+			task = &asyncTask{
 				ReqHandler:   handlerValue,
 				PrintHandler: reflect.Value{},
 				Params:       make([]reflect.Value, paramNum),
@@ -224,34 +240,52 @@ func (a *async) Add(name string, handler interface{}, printHandler interface{}, 
 					taskEndTime: 0,
 				},
 			}
-			a.mu.Unlock()
+			//a.mu.Lock()
+			//a.tasks[name] = &asyncTask{
+			//	ReqHandler:   handlerValue,
+			//	PrintHandler: reflect.Value{},
+			//	Params:       make([]reflect.Value, paramNum),
+			//	TaskStatus: &taskStatus{
+			//		taskStatus:  0,
+			//		taskBegTime: 0,
+			//		taskEndTime: 0,
+			//	},
+			//}
+			//a.mu.Unlock()
 		}
+		// 将传入的参数转换成reflect.Value类型
+		//if paramNum > 0 {
+		//	for k, v := range params {
+		//		a.mu.Lock()
+		//		a.tasks[name].Params[k] = reflect.ValueOf(v)
+		//		a.mu.Unlock()
+		//	}
+		//}
+		a.mu.Lock()
+		a.tasks[name] = task
 		// 将传入的参数转换成reflect.Value类型
 		if paramNum > 0 {
 			for k, v := range params {
-				a.mu.Lock()
 				a.tasks[name].Params[k] = reflect.ValueOf(v)
-				a.mu.Unlock()
 			}
 		}
-		a.mu.Lock()
-		a.count++
-		a.total++
+		a.taskNeedDoCount++
+		a.taskAllTotal++
 		a.mu.Unlock()
-		return true
+		return true, nil
 	}
-	return false
+	return false, fmt.Errorf(handlerValue.String() + " 不符合格式func(参数...)(返回...){}")
 }
 
 // Run 任务执行函数，成功时将返回一个用于接受结果的channel
 // 在所有异步任务都运行完成时，结果channel将会返回一个map[string][]interface{}的结果。
-func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool) {
-	if a.count < 1 {
+func (a *async) Run(taskParaCountMaxLimit int) (chan map[string][]interface{}, bool) {
+	if a.taskNeedDoCount < 1 {
 		return nil, false
 	}
 	// [任务名]结果切片
 	result := make(chan map[string][]interface{})
-	chans := make(chan map[string]interface{}, a.count)
+	chans := make(chan map[string]interface{}, a.taskNeedDoCount)
 	// 开启一个协程，用来接收调用函数的结果
 	go func(result chan map[string][]interface{}, chans chan map[string]interface{}) {
 		rs := make(map[string][]interface{})
@@ -259,7 +293,7 @@ func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 			result <- rs
 		}(rs)
 		for {
-			if a.count < 1 {
+			if a.taskNeedDoCount < 1 {
 				break
 			}
 			select {
@@ -281,7 +315,7 @@ func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 				rs[res["taskName"].(string)] = res["result"].([]interface{})
 				// 210519: Add 添加每个任务执行的结果
 				a.tasksResult[res["taskName"].(string)] = res["result"].([]interface{})
-				a.count--
+				a.taskNeedDoCount--
 
 			}
 		}
@@ -290,14 +324,14 @@ func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 	// asyncTaskKey: name,asyncTaskVal:asyncTask
 	for asyncTaskKey, asyncTaskVal := range a.tasks {
 		// 等待，直到当前开启的任务数小于配置中设定的最大任务数，则继续开启任务
-		a.wait(taskCountMaxLimit)
-		a.addTaskCount()
-		go func(taskName string, routinChans chan map[string]interface{}, task asyncTask) {
+		a.wait(taskParaCountMaxLimit)
+		a.addTaskDoingCount()
+		go func(taskName string, routinChans chan map[string]interface{}, task *asyncTask) {
 
-			// 全局当前协程数量加一
-			jconfig.Conf.GlobalConfig.AddGlobalGoroutinCount()
-			// 若全局当前协程数量不小于全局配置中的最大协程数量，则等待
-			jconfig.Conf.GlobalConfig.Wait()
+			//// 全局当前协程数量加一
+			//jconfig.Conf.GlobalConfig.AddGlobalGoroutinCount()
+			//// 若全局当前协程数量不小于全局配置中的最大协程数量，则等待
+			//jconfig.Conf.GlobalConfig.Wait()
 			taskResult := make([]interface{}, 0)
 			defer func(taskName2 string, resultChans chan map[string]interface{}) {
 				// 设置任务的状态为结束
@@ -305,9 +339,9 @@ func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 				// 设置任务结束时间戳，毫秒
 				task.TaskStatus.taskEndTime = time.Now().UnixNano()
 				// 任务数量减一
-				a.subTaskCount()
-				// 总实时协程数量减一
-				jconfig.Conf.GlobalConfig.SubGlobalGoroutinCount()
+				a.subTaskDoingCount()
+				//// 总实时协程数量减一
+				//jconfig.Conf.GlobalConfig.SubGlobalGoroutinCount()
 				// 通过chans传输结果
 				resultChans <- map[string]interface{}{"taskName": taskName2, "result": taskResult}
 			}(taskName, routinChans)
@@ -335,7 +369,7 @@ func (a *async) Run(taskCountMaxLimit int) (chan map[string][]interface{}, bool)
 
 // Clean 清空任务队列.
 func (a *async) Clean() {
-	a.count = 0
-	a.total = 0
-	a.tasks = make(map[string]asyncTask)
+	a.taskNeedDoCount = 0
+	a.taskAllTotal = 0
+	a.tasks = make(map[string]*asyncTask)
 }

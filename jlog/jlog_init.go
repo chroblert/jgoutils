@@ -81,6 +81,7 @@ type LogConfig struct {
 	UseConsole        bool
 	Verbose           bool
 	InitCreateNewLog  bool
+	StoreToFile       bool
 }
 
 func init() {

@@ -2,13 +2,12 @@ package jhttp
 
 import (
 	"bytes"
-	"github.com/chroblert/jgoutils/jlog"
 	"strings"
 )
 
 func (hm *httpMsg) parseFromBytes(reqMsg []byte) (reqLine []string, reqHeaders map[string]string, reqData []byte) {
 	if !CheckReqMsgIsValid(reqMsg) {
-		jlog.Error("报文格式不对")
+		jHttpLog.Error("报文格式不对")
 	}
 	reqHeaders = make(map[string]string)
 	for i, line := range bytes.Split(reqMsg, []byte("\r\n")) {
@@ -33,13 +32,13 @@ func (hm *httpMsg) parseFromBytes(reqMsg []byte) (reqLine []string, reqHeaders m
 func CheckReqMsgIsValid(reqMsg []byte) bool {
 	// 判断报文是否至少含有一行空格
 	if !bytes.Contains(reqMsg, []byte("\r\n\r\n")) {
-		jlog.Error("至少包含一行空行")
+		jHttpLog.Error("至少包含一行空行")
 		return false
 	}
 	// 判断第一行是否有两个空格
 	idx := bytes.IndexRune(reqMsg, '\r')
 	if len(bytes.Split(reqMsg[:idx], []byte(" "))) != 3 {
-		jlog.Error("首行应有两个空行")
+		jHttpLog.Error("首行应有两个空行")
 		return false
 	}
 	return true

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"github.com/chroblert/jgoutils/jasync"
 	"github.com/chroblert/jgoutils/jconv"
-	"github.com/chroblert/jgoutils/jlog"
 	"github.com/chroblert/jgoutils/jmath"
 	"io"
 	"os"
@@ -14,23 +13,23 @@ import (
 
 func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode int, headers map[string][]string, body []byte, err error)) map[string][]interface{} {
 	if len(hm.intruData.wordFiles) < 1 {
-		jlog.Error("请设置至少一个字典文件")
+		jHttpLog.Error("请设置至少一个字典文件")
 		return nil
 	}
 	//reqbytes, _ := ioutil.ReadFile(filename)
 	stringss := [][]string{}
 	for k, v := range hm.intruData.wordFiles {
-		jlog.Debug("打开字典文件:", k, v)
+		jHttpLog.Debug("打开字典文件:", k, v)
 		rd, err := os.Open(v)
 		if err != nil {
-			jlog.Error(err)
+			jHttpLog.Error(err)
 			return nil
 		}
 		reader := bufio.NewReader(rd)
 		lines := []string{}
 		for {
 			if line, _, err := reader.ReadLine(); err == nil || err == io.EOF {
-				//jlog.Info(string(line))
+				//jHttpLog.Info(string(line))
 				if err == io.EOF {
 					if string(line) != "" {
 						lines = append(lines, string(line))
@@ -55,16 +54,16 @@ func (hm *httpMsg) Intrude(isPrintAllStaus bool, printWithFilter func(statuscode
 			newReqBytes = bytes.Replace(newReqBytes, []byte("*"), []byte(wordtuple[idx].(string)), 1)
 			idx++
 			if len(wordtuple) < idx {
-				jlog.Error("error,字典个数少于标识的个数")
+				jHttpLog.Error("error,字典个数少于标识的个数")
 			}
 		}
 		jasyncobj.Add(strconv.Itoa(i), singleIntruder, printWithFilter, newReqBytes, hm.isUseSSL, hm.getProxy())
 	}
-	if jasyncobj.GetTotal() > 0 {
+	if jasyncobj.GetTaskAllTotal() > 0 {
 		jasyncobj.Run(-1)
 		jasyncobj.Wait()
 		if isPrintAllStaus {
-			jasyncobj.GetStatus("", false)
+			jasyncobj.PrintAllTaskStatus(false)
 		}
 	}
 	result := jasyncobj.GetTasksResult()

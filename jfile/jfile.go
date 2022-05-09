@@ -2,6 +2,7 @@ package jfile
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -116,4 +117,77 @@ func readLine(r *bufio.Reader) (string, error) {
 		line2 = append(line2, bs...)
 	}
 	return string(line2), err
+}
+
+// 判断文件内包含某个字节数组的数量,没有重叠 如：kkkk中包含两个kk
+func containsBytesCount(filepa string, cbytes []byte) int {
+	f, err := os.Open(filepa)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	// 每次读500字节
+	buf := make([]byte, 50)
+	cbytes2 := make([]byte, len(cbytes))
+	var seek int64 = 0
+	var count = 0
+	for {
+		rLens, err := f.Read(buf)
+		if err != nil {
+			break
+		}
+		//if bytes.Contains(buf,cbytes){
+		//	return 1
+		//}else{
+		// 判断当前读取出来的是否含有第一个字节
+		var k = 0
+		for ; k < len(buf); k++ {
+			//for k,v := range buf{
+			if buf[k] == cbytes[0] {
+				f.ReadAt(cbytes2, seek+int64(k))
+				if bytes.Compare(cbytes, cbytes2) == 0 {
+					//jlog.Debug(seek+int64(k))
+					k = k + len(cbytes)
+					count++
+					//return true
+				}
+			}
+		}
+		//}
+		if rLens < k {
+			seek += int64(k)
+		} else {
+			seek += int64(rLens)
+		}
+		f.Seek(seek, io.SeekStart)
+	}
+	return count
+}
+
+// 文件复制从src到dst
+func FileCopy(src string, dst string) error {
+	srcf, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcf.Close()
+	dstf, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		return err
+	}
+	defer dstf.Close()
+	buf := make([]byte, 500)
+	for {
+		n, err := srcf.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		if _, err := dstf.Write(buf[:n]); err != nil {
+			return err
+		}
+	}
+	return nil
 }

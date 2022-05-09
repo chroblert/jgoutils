@@ -2,26 +2,25 @@ package jparser
 
 import (
 	"fmt"
-	"github.com/chroblert/jgoutils/jlog"
 	"net"
 	"strconv"
 	"strings"
 )
 
 // ip1,ip2,ip3-ip4,ip5/cidr
-func ParseIPStr(ipStr string) []string{
-	tmpList := strings.Split(ipStr,",")
-	ipStrList := make([]string,0)
-	for _,v := range tmpList{
+func ParseIPStr(ipStr string) []string {
+	tmpList := strings.Split(ipStr, ",")
+	ipStrList := make([]string, 0)
+	for _, v := range tmpList {
 		// 是不是CIDR
-		if ips,err := getIPSFromCIDR(v); err == nil{
-			ipStrList = append(ipStrList,ips...)
-		}else if ips,err := getIPSFromIPRange(v); err == nil{
-			ipStrList = append(ipStrList,ips...)
-		}else if ip := net.ParseIP(v);ip != nil{
-			ipStrList = append(ipStrList,ip.String())
-		}else{
-			jlog.Error(err)
+		if ips, err := getIPSFromCIDR(v); err == nil {
+			ipStrList = append(ipStrList, ips...)
+		} else if ips, err := getIPSFromIPRange(v); err == nil {
+			ipStrList = append(ipStrList, ips...)
+		} else if ip := net.ParseIP(v); ip != nil {
+			ipStrList = append(ipStrList, ip.String())
+		} else {
+			//jlog.Error(err)
 		}
 	}
 	// 清空切片
@@ -42,23 +41,23 @@ func removeDuplicateElement(addrs []string) []string {
 	return result
 }
 
-func getIPSFromIPRange(ipRange string)([]string,error){
-	tmpList := strings.Split(ipRange,"-")
-	if len(tmpList) != 2{
-		return  nil,fmt.Errorf("不符合格式。ip1-ip2")
+func getIPSFromIPRange(ipRange string) ([]string, error) {
+	tmpList := strings.Split(ipRange, "-")
+	if len(tmpList) != 2 {
+		return nil, fmt.Errorf("不符合格式。ip1-ip2")
 	}
-	if ip2Int(tmpList[0]) > ip2Int(tmpList[1]){
-		return  nil,fmt.Errorf("ip1应小于ip2")
+	if ip2Int(tmpList[0]) > ip2Int(tmpList[1]) {
+		return nil, fmt.Errorf("ip1应小于ip2")
 	}
-	ips := make([]string,0)
+	ips := make([]string, 0)
 	startIP := net.ParseIP(tmpList[0])
 	endIP := net.ParseIP(tmpList[1])
 	// 过滤最后一位为0和255的IP
-	for ip := startIP; ip2Int(ip.String()) <= ip2Int(endIP.String()); inc(ip){
-		if  ip.To4()[3] == 255 || ip.To4()[3] == 0{
+	for ip := startIP; ip2Int(ip.String()) <= ip2Int(endIP.String()); inc(ip) {
+		if ip.To4()[3] == 255 || ip.To4()[3] == 0 {
 			continue
 		}
-		ips = append(ips,ip.String())
+		ips = append(ips, ip.String())
 	}
 	return ips, nil
 }
@@ -100,10 +99,10 @@ func getIPSFromCIDR(cidr string) ([]string, error) {
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
 		ips = append(ips, ip.String())
 	}
-	if len(ips) > 1{
+	if len(ips) > 1 {
 		return ips[1 : len(ips)-1], nil
-	}else{
-		return nil,fmt.Errorf("no element")
+	} else {
+		return nil, fmt.Errorf("no element")
 	}
 }
 

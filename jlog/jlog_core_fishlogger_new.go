@@ -34,6 +34,7 @@ type FishLogger struct {
 	mu                sync.Mutex    // logger🔒
 	writer            *bufio.Writer // 缓存io 缓存到文件
 	file              *os.File      // 日志文件
+	storeToFile       bool          // 是否将输出内容保存到文件
 }
 
 type buffer struct {
@@ -119,6 +120,13 @@ func (fl *FishLogger) SetUseConsole(b bool) {
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
 	fl.console = b
+}
+
+// 设置是否保存到文件
+func (fl *FishLogger) SetStoreToFile(b bool) {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.storeToFile = b
 }
 
 // 生成日志头信息
@@ -280,6 +288,9 @@ func (fl *FishLogger) write(lv logLevel, buf *buffer, isverbose bool) {
 		//tmpBytes = append(begColor,data...)
 		//tmpBytes = append(tmpBytes,endColor...)
 		//os.Stdout.Write(tmpBytes)
+	}
+	if !fl.storeToFile {
+		return
 	}
 	// 第一次写入文件
 	if fl.file == nil {

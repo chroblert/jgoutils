@@ -62,6 +62,17 @@ func newLogger(logConf LogConfig) *FishLogger {
 	fl.console = logConf.UseConsole
 	fl.verbose = logConf.Verbose
 	fl.iniCreateNewLog = logConf.InitCreateNewLog
+	fl.storeToFile = logConf.StoreToFile
+
+	fl.pool = sync.Pool{
+		New: func() interface{} {
+			return new(buffer)
+		},
+	}
+	// 220509: 设置不将日志保存到文件
+	if !fl.storeToFile {
+		return fl
+	}
 	//日志文件路径设置
 	fl.logFileExt = filepath.Ext(fl.logFullPath)                       // .log
 	fl.logFileName = strings.TrimSuffix(fl.logFullPath, fl.logFileExt) // logs/app
@@ -69,11 +80,7 @@ func newLogger(logConf LogConfig) *FishLogger {
 		fl.logFileExt = ".log"
 	}
 	os.MkdirAll(filepath.Dir(fl.logFullPath), 0666)
-	fl.pool = sync.Pool{
-		New: func() interface{} {
-			return new(buffer)
-		},
-	}
+
 	signalChannel := make(chan os.Signal, 1)
 	go fl.daemon(signalChannel)
 	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
@@ -99,5 +106,6 @@ func New(logConfs ...LogConfig) *FishLogger {
 		UseConsole:        true,
 		Verbose:           true,
 		InitCreateNewLog:  false,
+		StoreToFile:       true,
 	})
 }

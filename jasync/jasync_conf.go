@@ -5,13 +5,6 @@ import (
 	"sync"
 )
 
-// async配置
-// TaskMaxLimit 使用最大允许协程数量
-type asyncConfig struct {
-	TaskMaxLimit int
-	mu           *sync.RWMutex
-}
-
 // 全局配置
 type globalConfig struct {
 	MaxGoroutinCount      int
@@ -40,3 +33,17 @@ func (p *globalConfig) Wait() {
 	}
 	p.mu.RUnlock()
 }
+
+// async配置
+// TaskMaxLimit 使用最大允许协程数量
+type asyncConfig struct {
+	TaskMaxLimit int
+	mu           *sync.RWMutex
+}
+
+var (
+	jasyncConf = asyncConfig{
+		TaskMaxLimit: 200,
+		mu:           &sync.RWMutex{},
+	}
+)

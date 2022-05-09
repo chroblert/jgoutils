@@ -5,6 +5,7 @@ import (
 	"github.com/chroblert/jgoutils/jlog"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 var (
@@ -13,7 +14,8 @@ var (
 
 func main() {
 	nlog = jlog.New()
-	nlog.SetLogFullPath("logs\\nlog.log")
+	//nlog.SetLogFullPath("logs\\nlog.log")
+	nlog.SetStoreToFile(false)
 	defer func() {
 		nlog.Flush()
 	}()
@@ -31,4 +33,13 @@ func main() {
 	//p,_ := jfile.GetWorkPath()
 	nlog.Info(jfile.GetAbsPath("fdfasd\\fsadfa\\../ddd/log"))
 	nlog.Info(jfile.PathExists("ct95C4.tmp"))
+	wg := sync.WaitGroup{}
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func(t int) {
+			defer wg.Done()
+			nlog.Warn(t)
+		}(i)
+	}
+	wg.Wait()
 }

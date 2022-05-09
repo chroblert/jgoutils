@@ -49,6 +49,11 @@ func SetMaxSizePerLogFile(logfilesize int64) {
 	fishLogger.SetMaxSizePerLogFile(logfilesize)
 }
 
+// 设置是否保存到文件
+func SetStoreToFile(b bool) {
+	fishLogger.SetStoreToFile(b)
+}
+
 // -------- 实例 fishLogger
 func Println(args ...interface{}) {
 	fishLogger.nprintln(DEBUG, args...)

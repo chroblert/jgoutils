@@ -1,11 +1,9 @@
-// +build ignore
-
 package jrequests
 
 // 请求选项的结构体
 type Option struct {
 	Proxy       string
-	Timeout     int
+	Timeout     int64
 	Headers     map[string]string
 	Data        []byte
 	Params      map[string]string
@@ -45,7 +43,7 @@ func SetProxy(s string) OptionInterface {
 }
 
 // 设置超时
-func SetTimeout(timeout int) OptionInterface {
+func SetTimeout(timeout int64) OptionInterface {
 	return newFuncOption(func(o *Option) {
 		o.Timeout = timeout
 	})
